@@ -1,0 +1,5 @@
+"sample1" "sample2" "sample3"
+"gene1" 0 10 7
+"gene2" 8 5 7
+"gene3" 9 12 9
+"gene4" 0 0 0

@@ -1,0 +1,941 @@
+---
+title: "BaseR Recap Biomedical Sciences"
+author: "Katleen De Preter & Celine Everaert & Toon Callens"
+date: "03/10/2023"
+output: 
+  html_document:
+    theme: paper
+    highlight: tango
+    code_folding: show
+    toc: true
+    number_sections: true
+    toc_float: true
+    toc_depth: 3
+---
+
+# R course part 1
+
+In this introduction to R, you will master (or refresh) the basics of this beautiful open source statistical language. You will be able to work with various data structures including factors, matrices, lists and data frames. With the knowledge gained during this course, you will be ready to analyse your own datasets.
+
+Before you start, please read the following important remarks:
+
+1) If you don't know how to use a specific function, read the help files of the function and try the example code found in last paragraph of the help information. You can call these files by using ?namefunction or help(namefunction).
+
+2) When a script is not working, read the error messages thoroughly! Often it explains itself.
+
+3) Don't be afraid to Google your questions or error messages! You can also use ChatGPT!
+
+4) Analyse the question before you start to program. Split a complex problem in different parts. Try to answer the following questions:  What is the hypothesis? Which test do you need to use? Which data is needed to perform this test? Do you have this data or how do you get the data you need? What is the answer on the question?
+
+5) Dare to change scripts/commands and look what the effect is! Play with R! Don't be afraid, in the worst case you need to restart your notebook. Your computer will definitely not explode!
+
+6) Run the different cells one by one. The order of appearance in the notebook is often important as previous cells might contain variables that are needed.
+
+# Introduction
+
+## Numbers and calculations
+
+In R, you can enter numbers and perform arithmetics.
+Below you can find an example. Change the numbers and try other calculations.
+How can you take a square of 5 or the square root of 9?
+
+```{r}
+1
+1 + 4
+5
+9 * 11
+log(5)
+log2(5)
+5^2
+sqrt(9)
+```
+
+### R functions
+R functions are invoked by their name, then followed by the parenthesis, and zero or more arguments. 
+
+functionname(arguments)
+
+As for Python, R has many implemented functions, but you can write your own functions as well.
+
+Apply the pre-implemented function *c( )* (short from concatenate) to combine three numeric values into a vector.
+Change the vector to a vector with 10 numbers: 1,2,3,4,5,6,7,8,9 and 10. 
+At last try to create this vector in a shorter way by using 1:10 (with or without c()) and look at the result. Is this different compared to explicitly typing the numbers?
+
+```{r}
+c(1, 2, 3)
+c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+c(1:10)
+```
+
+Both *dir()* and *getwd()* are functions that don't need arguments. Type the commands: *dir()* and *getwd()*. What happens when you run these commands?
+
+```{r}
+# run the functions dir() and getwd()
+dir()
+getwd()
+```
+
+With following commands you will get the info about the dir-function. 
+
+```{r}
+?dir
+#or
+help(dir)
+```
+
+Try this out for the *getwd()* function as well.
+
+```{r}
+?getwd()
+```
+
+Apply the function *sum()* to the arguments: 910, 84 and 53. 
+
+```{r}
+sum(910, 84, 53)
+```
+
+## Assignments in R
+
+A variable, is a basic concept in (statistical) programming that comes back in every language. A variable allows you to store a value (e.g. 4) or an other object (e.g. a function description). This variable is loaded in the environment (memory of your program) and you can later use the variable's name to easily access the value or the object that is stored.
+
+We assign values to variables with the assignment operator " = ". Just typing the variable by itself at the prompt will print out the value. We should note that another form of assignment operator " <- " is also in use.
+Before the assigment operator you can give a self-chosen name of the object that you would like to store in the R environment. After the assignment operator you put the information that you want to store under the self-chosen name. With ls() you can check what objects are in your environment (you don't need to put arguments for this function between the parentheses). As you haven't made objects so far, there will be nothing.
+
+It is clean to surround the assignment operator with spaces thus "a <- 4" and not "a<-4". The use of " <- " is preferred above " = ", as the equal sign can be used to test assumptions as well. Clean coding will help you to decipher what you have written more easily. Some basic style rules can be found here: http://stat405.had.co.nz/r-style.html
+
+```{r}
+# see restrictions on naming conventions
+# 1_vector = 5 + 8 #!!! an object name cannot start with a number !!!!
+```
+
+```{r}
+a = 3 + 5
+b <- 9 - 10
+c = log(40)
+```
+
+With above script you have made 3 objects in R: a, b and c. You can discover what information is saved under a by either calling a in the code-cell or use function print: *print(a)*. You also learned that your object name cannot start with a number! Giving clear names will make your (coding) life easier. You probably discovered this during your Python courses already. Some R naming conventions can be found here: https://journal.r-project.org/archive/2012-2/RJournal_2012-2_Baaaath.pdf
+
+```{r}
+print(a)
+a
+```
+
+Run the following line. Does this works?
+
+```{r}
+#print(B)
+```
+
+Now, an error is raised. Be aware that R is case-sensitive (b is thus not the same as B)! Pay attention to the error message that appears: of course you cannot understand everything of this message but "object 'B' is not found" is clear, right?
+
+If you execute the following code, you will notice that object 'vector1' can be overwritten by new information.
+
+```{r}
+vector1 <- c(9, 8, 7)
+print(vector1)
+
+vector1 <- c(6, 5, 4)
+print(vector1)
+```
+
+### EXERCISE
+
+In the cell below:
+
+1) make object with number 10 and call it a
+
+2) make object with number 15 and call it b
+
+3) make the sum of object a and b by using both the function sum and also by using +
+
+```{r}
+a <- 10
+b <- 15
+a + b
+```
+
+## Environment
+type *ls()* --> then you can see which object you have made so far and thus which objects are saved in the environment. Make a new object and see what has changed in ls() compared to before.
+
+```{r}
+# run ls
+ls()
+
+# make new object
+new_object <- "new"
+
+# run ls
+ls()
+
+```
+
+you can always remove all your variables in your environment using this function:
+
+```{r}
+rm(list=ls())
+ls()
+```
+
+## Comments
+All text after the pound sign "#" within the same line is considered a comment.
+You can add comments to clarify commands, etc.
+
+```{r}
+vector2 <- c(1:10) #this command gives the same result as vector2=c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)
+print(vector2)
+#vector2 <- c(3, 2, 1)
+print(vector2)
+#the third line is a comment and does not change anything to object vector2
+vector2 <- c(3, 2, 1)
+print(vector2) #now vector2 is overwritten
+```
+
+```{r}
+#Run this line. It will give an error message, as R cannot interpret this. It is not indicated to be a comment.
+```
+
+# Data types and objects
+## Basic data types
+R works with numerous data types. Some of the most basic types to get started are:
+
+* Decimal values like 4.5 are called numerics.
+* Natural numbers like 4 are called integers. Integers are also numerics.
+* Boolean values (TRUE or FALSE) are called logical.
+* Text (or string) values are called characters.
+
+### Numerical
+
+```{r}
+num <- 5
+num
+```
+
+### Complex numbers
+
+```{r}
+com <- 1 + 2i
+com
+```
+
+### Character (always surrounded with " "!)
+
+```{r}
+cha1 <- "hello"
+cha1
+cha2 <- "4" #4 is not interpreted as number but as character!!!
+cha2
+```
+
+### Logical
+
+The (logical) comparison operators known to R are:
+
+    < for less than
+    > for greater than
+    <= for less than or equal to
+    >= for greater than or equal to
+    == for equal to each other
+    != not equal to each other
+
+As seen in the previous chapter, stating 6 > 5 returns TRUE. The nice thing about R is that you can use these comparison operators also on vectors. For example:
+
+```{r}
+6 > 5 # this command checks whether 6 is greater than 5
+num1 <- 10
+num2 <- 5
+num1 < num2 # this command checks whether num1 is smaller then num2? --> result is logical value
+```
+
+```{r}
+lo <- num1 < num2 # logical value is assigned to the variable lo
+print(lo)
+```
+
+### Check datatype
+You can check the datatype with the function *class()*. Try this out for the variables num1, cha1 and lo
+
+```{r}
+#check class of num1
+class(num1)
+#check class of cha1
+class(cha1)
+#check class of lo
+class(lo)
+```
+
+## Basic data objects
+### DATA OBJECT TYPE 1: vector
+#### introduction
+A vector is a sequence of data elements of the same basic type. Members in a vector are officially called components. Vectors are created by using the function *c()*, as we saw before.
+
+Below you can find 3 vectors with each 3 components:
+a vector containing three numeric values 2, 3 and 5; 
+a vector containing logical data;
+and a vector containing character values.
+
+In the third vector the second component is missing: NA means "not available".
+
+Play a bit with the code below (eg, by mixing numbers with characters) and see what happens.
+
+```{r}
+vec1 <- c(2, 3, 5)
+vec2 <- c(T, F, TRUE)
+vec3 <- c("a", NA, "etcetra")
+vec1 # to view what is in vec1
+vec2 # to view what is in vec2
+vec3 # to view what is in vec3
+```
+
+You can add names to the vector elements using following code lines:
+
+```{r}
+namesvector <- c("name1", "name2", "name3")
+names(vec1) <- namesvector
+print(vec1)
+```
+
+#### arithmetics
+You can do arithmetic calculations on vectors. 
+
+```{r}
+vec4 <- c(1,8,9,10)
+vec5 <- c(4,6,8,1)
+vec4 + vec5
+vec4 * 5
+sum(vec4, vec5)
+log(vec4) # can you check what logarithm is taken from vec4? (go to help file to see what base is standard used in the function log)
+vec4 / vec5
+mean(vec4)
+```
+
+```{r}
+vec6 <- vec5 / vec4
+vec6
+vec6 <- vec4 + vec5
+vec6 # here you overwrite the data in vec6 (i.e. vec5/vec4) with new data (i.a. vec4+vec5)
+```
+
+Recycling rule: If two vectors are of unequal length, the shorter one will be recycled in order to match the longer vector. For example, the following vectors vec7 and vec8 have different lengths, and their sum is computed by recycling values of the shorter vector vec7.
+
+```{r}
+vec7 = c(10, 20, 30) 
+vec8 = c(1, 2, 3, 4, 5, 6, 7, 8, 9) 
+vec7 + vec8
+```
+
+#### vector properties
+If you want to have more info on the functions applied below: go to the help file!
+
+```{r}
+vec9 <- c(5, 10, 25)
+length(vec9)
+max(vec9)
+min(vec9)
+summary(vec9)
+```
+
+#### vector index
+We retrieve values in a vector by declaring an index inside a single square bracket "[ ]" operator.
+
+For example, the following shows how to retrieve a certain vector component (or a set of vector components). We use the index position 3 for retrieving the third component in a vector, etc. Note that this is different in Python, where you start counting from zero. Can you try to retrieve element zero?
+
+```{r}
+vec10 <- c(1, 2, 3, 4, 5, 9, 10, 1, NA)
+vec10[3] # retrieve third component in vector
+vec10[c(1, 5, 8)] # retrieve first, fifth and eight component in the vector
+vec10[-3] # retrieve the components in the vector without the third element
+```
+
+You can also use a logical vector for indexing:
+
+A new vector can be sliced from a given vector with a logical index vector, which has the same length as the original vector. Its members are TRUE if the corresponding members in the original vector are to be included in the slice, and FALSE if otherwise. Change the logical vector lo_vec and see what happens with vec10[lo_vec].
+
+```{r}
+vec10 <- c(1, 2, 3, 4, 5, 9, 10, 1, NA)
+lo_vec <- c(T, F, T, F, F, T, T, T, F)
+vec10[lo_vec] #only the values of vec10 with a corresponding T=TRUE in l are retrieved
+```
+
+#### EXERCISE
+
+1) make vector (v) with numbers: 1, 4, 8, 3, 9, 7, 10
+
+2) check the length of v
+
+3) what is the mean of the numbers in v?
+
+4) what is the fourth element in v? (use both index position and a logical vector (see previous code line) to retrieve the fourth component of the vector)
+
+```{r}
+v <- c(1, 4, 8, 3, 9, 7, 10)
+length(v)
+mean(v)
+v[4]
+```
+
+
+#### factor vector
+A factor is a special version of a vector. It is a 1-dimensional data-object. Factors are vectors that have levels, for categorical values. In some cases it is computationally more efficient to work with factors. You can make a factor vector from a character vector with the function factor.
+
+```{r}
+cha <- c('a', 'b', 'c', 'a', 'a', 'c', 'b', 'a')
+print(cha)
+fac <- factor(cha)
+print(fac)
+```
+
+```{r}
+levels(fac) # with function levels you can retrieve the different categories in the factor; a factor is interesting to be used for categorical variables
+```
+
+```{r}
+summary(fac) 
+```
+
+***
+#### intermezzo - changing object types: 
+
+you can change the object types in a vector by applying the functions *as.character()* or *as.numeric()*
+
+```{r}
+num <- c(1, 4, 9)
+print(num)
+cha <- as.character(num)
+print(cha)
+
+cha <- c("1", "4", "10" ,"A") # the numbers in this vector are not interpreted as numbers but as characters
+print(cha) 
+num <- as.numeric(cha)#a letter cannot be converted to a number --> warning (not error) message but the command is exerted!
+print(num) # in this vector the numbers are interpreted as numbers (not anymore between quotation marks)
+```
+***
+
+### DATA OBJECT TYPE 2: matrix
+A matrix is a collection of data elements arranged in a two-dimensional rectangular layout. The following is an example of a matrix with 2 rows and 3 columns. Use the matrix function to generate a matrix in R.
+
+```{r}
+M1 = matrix( 
+    c(2, 4, 3, 1, 5, 7), # the data elements 
+    nrow=2,              # number of rows 
+    ncol=3,              # number of columns 
+    byrow = TRUE)        # fill matrix by rows 
+ 
+print(M1)                     # print the matrix 
+```
+
+Look at the help file of the function matrix to understand how to use this function. Change above script: byrow = FALSE: what changed in the matrix M1?
+
+```{r}
+M2 = matrix( 
+    c(2, 4, 3, 1, 5, 7), # the data elements 
+    nrow=2,              # number of rows 
+    ncol=3,              # number of columns 
+    byrow = FALSE)       # fill matrix by columns 
+ 
+print(M2)                     # print the matrix 
+```
+
+You can check the properties of a matrix with *dim()* and *summary()*, etc. Try out *dim()* and *summary()* on matrix M1. What do these functions do? Look also in the help files of these functions to find answers.
+
+```{r}
+dim(M1)
+summary(M1)
+
+?dim
+?summary
+```
+
+You can add row names and column names using vectors with the functions rownames and colnames.
+
+```{r}
+rownames(M1) <- c("patient1", "patient2") 
+colnames(M1) <- c("gene1", "gene2", "gene3")
+print(M1)
+```
+
+Indexing of a 2-dimensional matrix: An element at the mth row, nth column of M1 can be accessed by the expression M1[m, n]. The first number always refers to the rows, the second number (after the comma) always refers to the columns.
+
+The entire mth row M1 can be extracted as M1[m, ] (don't forget to put the comma).
+
+The entire nth column M1 can be extracted as M1[,n] (don't forget to put the comma).
+
+```{r}
+M1[2, 3]
+M1[1, ]
+M1[ ,3]
+```
+
+If you want to extract the first and third column, you can use a vector (instead of a single number) to perform the indexing. Give this a try.
+
+```{r}
+M1[,c(1,3)]
+```
+
+You can also use the row or column name to subselect parts of the matrix.
+
+```{r}
+M1["patient1", "gene1"] # here we ask for the value of gene1 in patient1
+```
+
+#### EXERCISE
+The expression of 4 genes was tested in 3 samples.
+
+1) Make a matrix (called M) containing the data, include rownames and column names (genes in rows and samples in columns: if it appears in the other way you can always use the function *t()* (stands for transpose))
+
+The expression of gene1, 2, 3 and 4 in Sample1 is 4, 8, 9, 4 respectively.
+
+The expression of gene1, 2, 3 and 4 in Sample2 is 10, 5, 12, 2 respectively.
+
+The expression of gene1, 2, 3 and 4 in Sample3 is 7, 7, 9, 2 respectively.
+
+Visualise the matrix first on paper, then try to construct it in R
+
+2) Check the expression of gene2 in Sample3 by indexing.
+
+3) Extract the elements from the second row.
+
+4) Calculate the mean of the elements in the second column.
+
+```{r}
+M <- matrix(c(4, 8, 9, 4, 10, 5, 12, 2, 7, 7, 9, 2), nrow=4, ncol=3, byrow=F)
+rownames(M) <- c("gene1", "gene2", "gene3", "gene4")
+colnames(M) <- c("sample1", "sample2", "sample3")
+M
+M["gene2", "sample3"]
+M[2,]
+mean(M[,2])
+```
+
+### DATA OBJECT TYPE 3: data-frame
+A data frame is used for storing data tables (2D). It is a list of vectors of equal length (vectors can be of different data types!). For example, the following variable df is a data frame containing three vectors num, cha, lo.
+
+```{r}
+num <- c(2, 3, 5) 
+cha <- c("aa", "bb", "cc") 
+lo <- c(TRUE, FALSE, TRUE) 
+df <- data.frame(num, cha, lo)       # df is a data frame
+df # the columns of this data-frame gets automatically the names of the vectors used to construct this data-frame
+df <- data.frame(col1 = num, col2 = cha, col3 = lo) # you can also use this command and then the column names will be col1, col2 and col3
+df
+```
+
+You can index on the data-frame in the same way as a matrix with number indexing, name indexing or logical indexing; but also with some indexing methods that specifically work for dataframes.
+
+```{r}
+df[1,2] # as with matrices
+df[1, ] # as with matrices
+df[ ,2]# as with matrices
+df[c(T, T, F), ]# as with matrices
+
+df["col1"] # the output is a new dataframe of only the values in column with name col1
+df[[3]] # third column (output is a vector, only the values are retrieved)
+df[["col3"]] # same output as previous command
+```
+
+#### EXERCISE
+
+1) Make a dataframe D with vector v (of previous exercise) and a column with following (character) elements: red, blue, green, grey, orange, purple, brown.
+
+2) Make a dataframe DF with matrix M (of previous exercise) and an additional column with (character!) elements A, B, C, D
+
+```{r}
+D <- data.frame(vector=v, color=c("red", "blue", "green", "grey", "orange", "purple", "brown"))
+D
+DF <- data.frame(M, col=c("A", "B", "C", "D"))
+DF
+```
+
+**differences between matrices and dataframes**
+
+In R, both dataframes and matrices are used to represent tabular data, with rows and columns, making them suitable for storing structured data. However, there are significant differences between the two:
+
+Matrices:
+
+Single Data Type: Matrices can only contain a single class of data. This means that all elements in a matrix must be of the same data type, such as integer, numeric, character, etc.
+
+Performance: Matrices are generally faster to access and index compared to dataframes due to their homogeneous nature. They behave like two-dimensional vectors, and this simplicity can lead to faster operations in some cases.
+
+Dataframes:
+
+Multiple Data Types: Dataframes can consist of many different classes of data. Each column in a dataframe can be a different data type, which makes dataframes more flexible when handling heterogeneous data. This is a key feature when working with real-world data, where columns may represent different types of information, such as numbers, text, dates, and factors.
+
+Flexibility: Dataframes are more flexible and versatile when dealing with complex data. They can handle mixed data types within the same structure, making them suitable for data manipulation, analysis, and visualization.
+
+In summary, matrices are ideal for situations where you have homogeneous data and need to perform operations efficiently. Dataframes, on the other hand, are more flexible and better suited for real-world data that often contains columns with different data types.
+
+In the example below, you can see what happens when you try to add multiple data classes in one matrix. When trying to add a column of characters, all the other values are changed to characters as well.
+
+```{r}
+M_num <- matrix(c(4, 8, 9, 4, 10, 5, 12, 2, 7, 7, 9, 2), nrow=4, ncol=3, byrow=F)
+M_num
+
+M_cha <- matrix(c('name1', 'name2', 'name3', 'name4', 10, 5, 12, 2, 7, 7, 9, 2), nrow=4, ncol=3, byrow=F)
+M_cha
+```
+
+In a dataframe, this would be no problem:
+
+```{r}
+cha <- c('name1', 'name2', 'name3', 'name4') 
+num1 <- c(10, 5, 12, 2) 
+num2 <- c(7, 7, 9, 2) 
+df <- data.frame(cha, num1, num2)
+df
+```
+
+### DATA OBJECT TYPE 4: list
+A list is a generic vector containing other objects.
+It is an object consisting of an ordered collection of objects known as its components with different modes and types (unlike data.frames the row dimensions don’t have to be equal for the different objects).
+Below we make a list with 3 components, including a matrix, a numerical vector and a factor.
+
+```{r}
+M2 <- matrix(c(1:50), 10, 5) # a matrix
+vec <- c(60, 9, 100, 303, 50000, NA) # a numerical vector
+fac <- factor(c("A", "A", "B", "A", "B", "A")) # a factor with 2 levels
+l <- list(
+    expression_data = M2, 
+    measurements = vec, 
+    classes = fac
+)
+l
+```
+
+Play with the above script. Add two more components: a character vector and a dataframe.
+
+You can retrieve information from the list with following commands:
+
+```{r}
+l[[3]]  #(3th component of the list)
+l$classes #(give component with the name “classes”)
+l[[3]][2] #(give second element of 3th component of the list)
+```
+
+#### EXERCISE
+
+1) make a list L including following objects: the matrix M and the vector v (of the previous exercises)
+
+2) give the second component in the list L
+
+3) give the second row in the first component in the list L
+
+```{r}
+L <- list(M, v)
+L
+L[[2]]
+L[[1]][2,]
+```
+
+## other object types
+### Formulas
+
+Very often, you need to express a relationship between variables. Sometimes, you want to plot a chart showing the relationship between the two variables. Other times, you want to develop a mathematical model. R provides a formula class that lets you describe the relationship for these purposes. Something that characterizes formulas in R is the tilde operator ~, in the below example you can say: "y depends on a, b and c"
+
+```{r}
+y ~ a+b+c
+```
+
+### Functions
+
+Functions are the R objects that evaluate a set of input arguments and return an output value. Functions encapsulate code that needs to be executed multiple times, possibly with slightly different parameters, and are also used to share code with others: packages e.g. are a collection of certain functions.
+
+```{r}
+add.3.fun <- function(x)(x + 3) # in this function 3 is added to the argument
+add.3.fun(2) # if we apply "add 3" to 2, we get of course: 5
+```
+
+Play a bit with above commands. Make another function and/or apply this function on different inputs.
+
+## summary
+### data types
+character (e.g. "a"), numeric (e.g. 5), complex (e.g. i+2), logical (e.g. TRUE), ...
+
+### data objects
+vector, matrix, dataframe, list, formula, function, ...
+
+! you can check the object type with the function class
+
+```{r}
+class(M)
+class(l)
+class(df)
+class(fac)
+```
+
+### indexing
+indexing by integer vector:
+
+    x[1:3,]
+
+    ! different for lists: list[1] (first object in list)
+
+
+indexing by name:
+
+    x[,”A”]
+
+    for data-frames also= x$A, x[["A"]] (output = vector), x["A"] (output = dataframe)
+
+
+indexing by logical vector:
+
+    x[x[,"A"]>5,] (see also further)
+
+intermezzo: You can change the values in a subselection of an object (obtained by indexing) in this way. Play a bit with the script below.
+
+```{r}
+vec <- c(1, 4, 5, 6, 8, 9)
+vec
+vec[1:3] <- c(3, NA, 5) # change the 3 first values in a vector
+vec
+```
+
+# conditions applied on data objects
+By applying conditions you will generate logical vectors that can be applied on vectors/matrices/dataframes for indexing.
+
+apply to vectors:
+
+```{r}
+x <- c(1, 3, 4, 5, 8, 9, NA)
+cond <- x == 4
+x[cond] #a vector is generated with only values that are equal to 4  (or are NA)
+cond <- x != 4
+x[cond] #a vector excluding all 4s is generated (or NA)
+cond <- x > 4
+x[cond] #a vector with only values greater than 4 is generated (or NA)
+cond <- !is.na(x)
+x[cond] #a vector without NAs is generated
+```
+
+apply to matrices:
+
+```{r}
+M3 <- matrix(c(2, 5, 5, 3, 4, 3, 4, 9, 10, 7, 3, NA, 4, 4, NA, 4, 2, 3, 9, 9), nrow = 4, byrow = T)
+M3
+```
+
+```{r}
+cond <- M3[ ,3] > 4 #define condition: rows of matrix for which the element in the third colomn is greater than 4
+cond #look at this logical vector and look at the matrix
+M3[cond, ] #apply condition to matrix rows
+
+cond <- M3[2,] > 3 & M3[4,] == 9 #define condition: select only columns of matrix for which the element in the second row is greater than 3 AND the element in the third row is equal to 9
+cond #look at this logical vector and look at the matrix
+M3[, cond] #apply condition to matrix columns
+```
+
+## EXERCISE
+
+1) give all elements in v (previous exercise) that are larger than 4
+
+2) change these elements and make them 0 (I have explained this in an intermezzo)
+
+3) give all elements in the second row of M (previous exercise) that are equal to 6 or larger than 7
+
+```{r}
+v
+v[v>4]
+v[v>4] <- 0
+
+M
+cond <- M[2,] == 6 | M[2,] > 7
+cond
+M[2,cond]
+```
+
+# for-loops
+Use the for loop if you want to do the same task a specific number of times.
+It looks like this.
+
+for (counter in vector) {commands}
+
+For example, you want to print the mean of each column row of matrix M4.
+
+```{r}
+M4 <- matrix(c(2, 5, 5, 3, 4, 3, 4, 9, 10, 7, 3, 3, 4, 4, 7, 4, 2, 3, 9, 9), nrow = 4, byrow = T)
+M4
+for(i in 1:4){ 
+    print(mean(M4[i, ]))
+} #for every of the 4 rows of my matrix, I ask to print the mean
+```
+
+Play a bit with the script above. Try to print the sum of every column of the matrix (instead of the mean in the previous example).
+
+```{r}
+for(i in 1:4){ 
+    print(sum(M4[i, ]))
+}
+```
+
+In the above example, the sums are printed in the console but are not stored in an object. If you want to exert a certain function for all rows or columns of a matrix or dataframe, you can also use the apply function.
+
+```{r}
+apply(M4, 1, sum) #apply function sum on all rows of the matrix M (in the help file of apply you can read that the second argument (with value 1) means that you do it at row level)
+apply(M4, 2, sum) #apply function sum on all columns of the matrix M (in the help file of apply you can read that the  second argument (with value 2) means that you do it at column level)
+```
+
+```{r}
+result_row <- apply(M4, 1, sum) # now you have saved the result in an object with the name result_row
+```
+
+```{r}
+print(result_row)
+```
+
+# if function
+
+Try the command below. Adapt and see what results you get.
+
+```{r}
+a <- 10
+b <- 11
+if (a==10){
+    c <- 0
+} else {
+    c<-1
+}
+
+if (b==10){
+    d <- 0
+} else {
+    d <- 1
+}
+
+```
+
+```{r}
+print(c)
+```
+
+```{r}
+print(d)
+```
+
+# plots
+With following functions you can make
+
+* scatter plots (*plot()*)
+* histograms (*hist()*)
+* boxplots (*boxplot()*)
+* barplots (*barplot()*)
+* stripcharts (*stripchart()*)
+
+```{r}
+M4 <- matrix(c(2, 5, 5, 3, 4, 3, 4, 9, 10, 7, 3, 3, 4, 4, 7, 4, 2, 3, 9,9 ), nrow = 4, byrow = T)
+M4
+plot(M4[,1], M4[,3]) #plot the values of the first column in x-axis versus these from the third column in the y-axis of a scatter plot
+```
+
+You can add legend, points, ablines with following functions: *legend()*, *points()*, *lines()*, *abline()*, *curve()*.
+
+Go to the helpfile of the function *par()*. There you can see which arguments you can add to a plot-function to change plot-points, color of the points, etc.... Some interesting arguments that you can use in the plot function: pch = type of plot-points, col = color of the points, main = give title to plot, xlab = give label to x-axis, etc
+
+Make above plot a bit nicer with x and y labels and colored points... 
+
+```{r}
+plot(M4[,1], M4[,3], xlab = "labelx", ylab= "labely", col = "red")
+```
+
+In a later practical, we will use the package ggplot, which is more flexible and user-friendly.
+
+# read data from and to a text file
+If you have generated a matrix in R, you might be interested to export it as a txt file so that you can use it in another program (such as excel, or other). --> export data with write.table
+
+Or you want to apply R-functions on an existing data-matrix that you have as txt-file. --> import/read txt-files with read.table (don't forget to check that you are in the rigth working directory where your file that you want to import is saved!!!)
+
+Notice the dot after write and read: read.
+Later we will also see read_ with an underscore.
+
+```{r}
+write.table(M4, file = "export_file.txt") #the matrix M4 will be saved in your working directory in a txt-file named export_file
+M_imported <- read.table(file = "export_file.txt") #now we will import the data back into R
+```
+
+```{r}
+M_imported # automatically col names are added to the data
+```
+
+Look at the helpfiles of the functions above. You can see that you can add arguments, for example if the data you want to import have rownames or have a header (= column names), etc.
+REMARK: if you use read.table data will be read as a data-frame (not as a matrix) (cfr practicum lesson 2)!!!
+
+With the function getwd() you will see in which working directory you are working. You can change it using setwd(). With the function dir() you can see what files are saved under the working directory. So, with dir() you can check whether the file that you would like to import is indeed in your working directory!!! Or you can check if your file is indeed saved.
+
+```{r}
+dir()
+getwd()
+```
+
+# save (the objects) in your current workspace
+
+With the ls-function you can see what objects are all saved/made in the current R-session/workspace/environment. You can save all these objects using the save-function as a .RData file. With load-function you can import the file with all objects again in R. This can be usefull if you want to stop your current R-session (--> use the function save) and re-iterate the analyses at another time (--> use the function load).
+
+```{r}
+ls()
+save.image(file = "all_objects_exercises1.RData") # save all objects in the current R-workspace
+save(M_imported, M4, file="certain objects of ex1.RData") # save certain objects (1 or more) from your current R-workspace
+```
+
+```{r}
+load("all_objects_exercises1.RData")
+```
+
+## EXERCISE
+
+1) matrix M: plot the expression of gene1 on x-axis versus the expression of gene3 on y-axis. You can save the plot by clicking the rigth mouse button as png file.
+
+2) matrix M: change all expression values with an expression equal to or below 4 to 0,
+
+3) what is the mean expression of all genes in matrix M
+
+3) export the table (matrix M) as a .txt file (name of file = expression data, check directory!).
+
+```{r}
+plot(M["gene1", ], M["gene3", ])
+abline(h=11) # playing a bit with abline
+legend(4, 10, legend="Mdata") # playing a bit with legend
+
+plot(M["gene1",], M["gene3",], col="blue", pch=23, cex=3) # playing a bit with the arguments you can find in ?plot and ?var
+
+M[M<=4] <- 0
+M
+
+apply(M, 1, mean)
+
+write.table(M, file="expression_data.txt")
+dir()
+```
+
+# Loading R packages
+
+Packages are collections of functions, data sets, and documentation bundled together to provide specific functionality or tools for various tasks. They are a fundamental part of the R ecosystem and play a crucial role in extending R's capabilities.
+
+There are two important functions when it comes down to R packages:
+
+install.packages(), which as you can expect, installs a given package.
+library() which loads packages.
+
+## tidyverse and tibbles
+
+Tibbles are part of the tidyverse package, so we'll first need to install and load it. In this course, we'll mainly use tibbles as a means of manipulating and looking at our data. Tibbles can be seen as data frames and we'll mostly read them from an external .csv or .tsv file.
+
+```{r}
+#install.packages("tidyverse") #this line only needs to be executed one time. Once the package is installed, you can always load it using the library() function.
+library(tidyverse)
+```
+
+Alternatively, you can use the require() function, which returns a logical value indicating whether the package was successfully loaded.
+
+```{r}
+if (!require(tidyverse)) {
+  install.packages("tidyverse")
+  library(tidyverse)
+}
+```
+
+```{r}
+tibble <- read_csv("test.csv")
+tibble
+```
+
+The next practical will deal with tidyverse and tibbles in greater detail.

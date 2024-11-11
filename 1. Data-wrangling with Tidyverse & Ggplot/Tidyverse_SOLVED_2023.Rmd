@@ -1,0 +1,648 @@
+---
+title: "Tidyverse Introduction Biomedical Sciences"
+author: "Celine Everaert / Katleen De Preter"
+date: "10/16/2023"
+output: 
+  html_document:
+    theme: paper
+    highlight: tango
+    code_folding: show
+    toc: true
+    number_sections: true
+    toc_float: true
+    toc_depth: 3
+---
+
+Welcome in the second practical session. To help you out, you can find a cheatsheet [here](https://images.datacamp.com/image/upload/v1676302697/Marketing/Blog/Tidyverse_Cheat_Sheet.pdf), these are summaries of the most useful functions for tidyverse and ggplot. It helps to print them out, and use them when making the exercises.
+
+# About R, Rstudio, RMarkdown and jupyter notebooks
+
+For these practical sessions you will use RMarkdown in Rstudio. You can set up by first installing [R](https://cran.r-project.org) and afterwards [Rstudio](https://rstudio.com/products/rstudio/download/). If you're using this software later for other projects, don't forget to update this on a regular basis. Another option is to go to Athena and run Rstudio from there, than you don't need to install anything. We posted a short video on UFora that demonstrates you how to work with RStudio.
+
+# Data exploration
+
+Data exploration and visualization of your data is an important first step and can lead to new hypotheses that are worthwhile testing or validating (in the lab or on your computer). The goal of data exploration is to generate interesting new leads that you can later explore in more depth. In this practical session you will learn how to import, tidy and transform your data into the desired format. In the second part of this practical session, you will go deeper into data visualization. At the end of this session, you should be able to make publication ready graphs. In later session, you will learn how to perform statistical testing and learn some new, more advanced, approaches such as survival analysis. Finally, you will learn how a RNA-sequencing data-mining pipeline can be performed using R.
+
+# About Tidyverse
+
+## What is Tidyverse?
+
+Tidyverse is an collection of packages in R that are designed for data science. All packages have the same underlying grammar and data structures, which makes them easy to combine.
+
+Core tidyverse contains:
+* ggplot2: a versatile system to create graphics
+* dplyr: helps you out with data manipulation challenges
+* tidyr: cleans your data
+* readr: has useful functions to read in files
+* ...
+
+If you want to know more about Tidyverse, you can visit the [tidyverse website](https://www.tidyverse.org).
+
+If you use Rstudio from Athena, Tidyverse is already pre-installed. If you use Rstudio on your local computer, you might need to install tidyverse first by using the `install.packages()` function (in that case remove the # in the script before before running). Each time you start a new R session, it's needed to load the tidyverse library (by running `library(tidyverse)`) if you want to work with it. The installation is only needed to perform once.
+
+```{r setup, include=FALSE}
+#install.packages("tidyverse")
+library(tidyverse)
+```
+
+## Difference between tibbles and data.frames
+
+Tibbles are data frames and they are the key data structure in tidyverse.
+There are a couple of main differences between a tibble and a classic data.frame (as used in base R). When you print a tibble, you will only see the first few lines, while for a data.frame you see the whole structure. A second big difference is when extracting subsets from your data. Tibbles are more strict and will give you error messages when the column is not existing. Tibbles usually don't assign rownames, if you do so (this can be forced), than two rows cannot be assigned the same name (which is similar as for dataframes). Tibbles can have column names that contain spaces or other characters that are not always allowed as variables in dataframes baseR. In the next block of code, you discover how to create tibbles.
+
+```{r}
+# creating a tibble
+tibble( 
+  x = 1:5,
+  y = 1,
+  z = x ^ 2 + y
+)
+
+# convert a data.frame to a tibble
+# iris is a preloaded data.frame in R
+class(iris)
+as_tibble(iris)
+```
+
+# Loading Data with readR
+
+If you want to perform some data analysis, the first thing you need to do is reading in the data in R. With readr, a package that is contained in tidyverse (it means that you don't have to load readr if you have already loaded tidyverse), you can read comma separated files (.csv, by: `read_csv()`), tab separated files (.tsv, by: `read_tsv()`), tabular files where columns are separated by a white space (by: `read_table()`) and others. You will notice that these functions are similar to their base R analogs (eg. `read.table()`, `read.tsv()`, ...) but when using the "_"/tidyverse functions, the data is directly converted to a tibble (= the tidyverse compatible data structure).
+
+## The Neuroblastoma Dataset
+
+For this practical session, we will work with two data sets. First, we will use a neuroblastoma patient dataset (neuroblastoma is a rare childhood cancer), containing information about the clinical stage of the patient (1 is a local tumor, 4 is a metastatic tumor, 4S is a special stage specific to neuroblastoma), the age of the patient, the overall survival (OS) and event free survival (EFS) information, MYCN amplification status and expression of two genes (MYC and MYCN).
+
+In this case our data is stored in a .csv file, thus we will use the *read_csv()* function to read in our data. While reading the data, each column is assigned a data type. 
+
+```{r}
+NB_data <- read_csv("Data/NB_data.csv")
+```
+
+There are several steps we could take to explore our data. We can just look to the first few lines. You can change this to see more lines (eg. 20). 
+
+```{r}
+# check header of the tibble
+head(NB_data)
+
+# view more lines, if needed google or check the help manual
+head(NB_data, 20)
+```
+
+Secondly, we will control if the data types of each column are correctly assigned. You can use this by the `str()` function. We see that some columns have the data type 'col_double', this stands for double precision numeric values which is similar to the floating numbers in Python (numeric data including those with decimal points).
+What is the data type of stage, MYCN_status and MYC_expr in the tibble? Is this what you expect? 
+We note that MYCN_status, OS_bin and EFS_bin are assigned numeric (col_double()), instead of factor type. These variables have only two values, namely 0 and 1. Since these values stand for a particular status, eg. MYCN amplifications or no MYCN amplification, and not a numerical/integer value, we want them to be treated as a status and thus we need to convert these data to a factor. Factors represent categorical data that are either nominal or ordinal. You will see that the data haven’t changed in the tibble (still 0 and 1 values), however these data are now treated as categorical data or factor. The advantage of storing data as factors over characters, … is that it's more memory friendly, so your computer/calculations will work faster. 
+
+[Here](https://biocorecrg.github.io/CRG_R_tidyverse_2021/data-types-in-tibbles.html) you can find some further information on the different data-types that exist.
+
+I gave you an example for MYCN, can you do the same for OS_bin and EFS_bin?
+
+```{r}
+# checking data types of the columns
+str(NB_data)
+
+# change binary type data (factor) for MYCN
+NB_data$MYCN_status <- as.factor(NB_data$MYCN_status)
+
+# change for OS_bin and EFS_bin
+NB_data$OS_bin <- as.factor(NB_data$OS_bin)
+NB_data$EFS_bin <- as.factor(NB_data$EFS_bin)
+
+# checking data types of the columns again, did they change?
+str(NB_data)
+```
+
+Instead of changing those column types explicitly, we could change this when reading in the data.
+We use the col_types argument and state the data types of each column by typing c for character, f for factor and d for double. Note that stage is a character, since it includes, besides integers, also '4S'.
+
+```{r}
+NB_data <- read_csv("Data/NB_data.csv", col_types = "cfcddfdfdd")
+
+# or by more explicit stating
+
+NB_data <- read_csv("Data/NB_data.csv", col_types = list(col_character(), col_factor(), col_character(), col_double(), col_double(), col_factor(), col_double(), col_factor(), col_double(), col_double()))
+```
+
+To get some basic stats for each of the columns in your data frame, you can just use `summary()`.
+
+```{r}
+# get a summary of the tibble, depending on the data type
+summary(NB_data)
+```
+
+## The COVID19 data
+
+As a second dataset, we will use the COVID19 data. You can explore the dataset in a same way, so you can discover the differences and similarities between R (including tidyverse) and Python (including pandas). Go to the [sciensano website] (https://epistat.wiv-isp.be/covid/) and download the "Confirmed cases by date, age, sex and province" table in csv format. Read in the data. Look into the data an check if the assigned data types for the variables/columns are appropriate.
+
+```{r}
+# read in data
+covid_case_data <- read_csv("Data/COVID19BE_CASES_AGESEX.csv")
+
+# check the column types and adapt if needed
+str(covid_case_data)
+```
+
+In addition we will work with the hospitalisations, mortality rates and tests. Download the tables "Hospitalisations by date and provinces", "Mortality by date, age, sex, and region" and "Total number of tests by date". Read in these data frames as well. Use the predefined names (eg. covid_hospitalisations_data), this will make it easier to traceback the code for you. If you need to choose names, use something meaningful, not just "df" as you will see in many manuals. 
+
+```{r}
+# read in hospitalisations
+covid_hospitalisations_data <- read_csv("Data/COVID19BE_HOSP.csv")
+  
+# read in mortality
+covid_mortality_data <- read_csv("Data/COVID19BE_MORT.csv")
+  
+# read in tests
+covid_tests_data <- read_csv("Data/COVID19BE_tests.csv")
+
+# check again the column types of all three data frames, would you change any?
+covid_mortality_data <- read_csv("Data/COVID19BE_MORT.csv")
+covid_mortality_data$SEX <- as.factor(covid_mortality_data$SEX)
+```
+
+If you are working in Rstudio, you should now see that these five tibbles are loaded in your environment. You can check this by running the following block of code.
+
+```{r}
+ls()
+```
+
+## Parsing data from the web
+
+Instead of downloading the data, we can directly download and read the data from the web by using the curl library with the `curl()` function.
+
+```{r}
+#install.packages("curl")
+library(curl)
+covid_case_data <- read_csv(curl("https://epistat.sciensano.be/Data/COVID19BE_CASES_AGESEX.csv"))
+
+#covid_hospitalisations_data <- read_csv(curl("https://epistat.sciensano.be/Data/COVID19BE_HOSP.csv")) (we are not running this line anymore as apparantly the new data available via the website have been updated and it now results in a strange result in one of the exercises. Therefore, we use the covid-hospitalisation data that you have uploaded from the local file.)
+
+covid_mortality_data <- read_csv(curl("https://epistat.sciensano.be/Data/COVID19BE_MORT.csv"))
+
+covid_tests_data <- read_csv(curl("https://epistat.sciensano.be/Data/COVID19BE_tests.csv"))
+```
+
+## Writing data
+
+Sometimes it might be handy to write your (processed) data to a csv/tsv file, so you can send it to someone else, or upload it in a database or ... We can use the `write_tsv()` or `write_csv()` functions.
+
+```{r}
+write_tsv(covid_mortality_data, "Data/covid_mortality.tsv")
+
+write_csv(covid_mortality_data, "Data/covid_mortality.csv")
+```
+
+# Transforming Data with dplyr
+
+Sometimes we obtain data sets, that are not yet in the exact format we need. We want to create new variables, that are combinations of other columns, summaries, filtered sets, ... With dplyr this becomes pretty easy!
+
+Dplyr has a set of interesting functions for data transformations:
+
+* `filter()` to filter out observations by their values
+* `arrange()` to reorder rows
+* `mutate()` to create new variables
+* `summarise()` to collapse many values down to a single value (per group)
+
+Each of those functions can be applied on our data frames by using piping ("%>%"). By adding multiple pipes we can apply various functions after each other. The pipe thus concatenates a sequence of actions on a tibble.
+
+## Filter the data entries that you need
+
+Imagine, we are only interested in patients within the 4S stage and we want to filter those from the NB dataset. Therefore we could use filter in combination with base Rs logical operators. You can refresh the R base logicals [here] (https://www.youtube.com/watch?v=6PpQS-YLWDQ).
+
+```{r}
+# filter stage 4S, if this is not working you should check if the column is of type character
+NB_data %>%
+  filter(stage == "4S")
+```
+
+To save this data frame in our environment, we need to assign the result to a new variable. But be careful with saving a lot of intermediate data frames, this will take up some of the RAM memory of your computer and might slow down processes. I usually only do this when calculating takes a while and you need the tibble multiple times. Luckily, you can remove the data from your environment as well when you don't need it anymore.
+
+```{r}
+# filter stage 4S and save in environment
+NB_4S_data <- NB_data %>%
+  filter(stage == "4S")
+
+# remove data from environment
+rm(NB_4S_data)
+```
+
+Instead of filtering for a character variable, we could filter on numerical values. Eg. we want patients that are younger than (or just) a year (365 days). Or we could select all patients that are not 4S. We can also combine both selections.  To make these combinations, we will need Boolean operators: & is 'and, | is "or" and ! is "not. You can't write `filter(stage == "4" | "4S")`, but you can use a shorthand for this problem instead, namely `x %in% y`.
+
+```{r}
+# patients younger than
+NB_data %>%
+  filter(age <= 365)
+
+# patients that are not 4S
+NB_data %>%
+  filter(stage != "4S")
+
+# patients in stage 1 and 4S
+NB_data %>%
+  filter(stage %in% c("1","4S"))
+
+# patients that are 4S and younger than a year
+NB_data %>%
+  filter(stage == "4S" & age <= 365)
+
+# patients that are 4S or have a MYCN_status of 1
+NB_data %>%
+  filter(stage == "4S" | MYCN_status == "1")
+```
+
+Okay, we will practice! Your turn to apply the correct filters.
+
+```{r}
+# filter the data from the 85+ age group from the covid_mortality_data
+covid_mortality_data %>%
+  filter(AGEGROUP == "85+")
+
+# filter the data with deaths in the 85+ that are female from the covid_mortality_data
+covid_mortality_data %>%
+  filter(AGEGROUP == "85+" & SEX == "F")
+
+# filter the data with deaths in the 0-24 age group
+covid_mortality_data %>%
+  filter(AGEGROUP == "0-24")
+
+# filter the data in the 0-24 and 85+ age group
+covid_mortality_data %>%
+  filter(AGEGROUP %in% c("0-24","85+"))
+
+# filter the data with more than 20 deaths in Wallonia
+covid_mortality_data %>%
+  filter(DEATHS > 20 & REGION == "Wallonia")
+
+# filter the data with more than 20 deaths in Flanders or more than 10 deaths in Brussels
+covid_mortality_data %>%
+  filter((DEATHS > 20 & REGION == "Flanders") | (DEATHS > 10 & REGION == "Brussels"))
+```
+
+## Arrange the data
+
+Sometimes, you want your data in a particular order. Eg. for our neuroblastoma data set we would like to order the patients according to age. We can do this from young to old, but also the other way around. We can also combine two (or more) variables to order (eg stage and age). Inspect the outcomes to see the differences.
+
+```{r}
+# arrange according to age (young - old)
+NB_data %>%
+  arrange(age)
+
+# arrange according to age (old - young)
+NB_data %>%
+  arrange(-age)
+
+# arrange according to stage (first) and age (second)
+NB_data %>%
+  arrange(stage, age)
+
+# arrange according to age (first) and stage (second)
+NB_data %>%
+  arrange(age, stage)
+
+# and we could combine filter with arrange
+NB_data %>% 
+  filter(stage=="4S") %>%
+  arrange(age)
+```
+
+Okay you can practice again!
+Order the covid_hospitalisations_data as asked for.
+
+```{r}
+# order according to NEW_IN low - high
+covid_hospitalisations_data %>%
+  arrange(NEW_IN)
+
+# order according to NEW_IN  high - low
+covid_hospitalisations_data %>%
+  arrange(-NEW_IN )
+
+# filter data from the PROVINCE "OostVlaanderen" with more than 100 patients in "TOTAL_IN_ICU", arrange according to DATE
+covid_hospitalisations_data %>%
+  filter(PROVINCE == "OostVlaanderen" & TOTAL_IN_ICU > 100) %>%
+  arrange(DATE)
+```
+
+## Select desired variables
+
+Besides arranging and filtering observations/rows, you might want to select specific variables/columns, especially when you have hundreds or even thousands of variables.
+
+```{r}
+# a positive selection
+NB_data %>%
+  select(MYC_expr, MYCN_expr)
+
+# a negative selection or dropping columns
+NB_data %>%
+  select(-MYC_expr, -MYCN_expr)
+
+# select all columns starting with MYCN
+NB_data %>%
+  select(starts_with("MYC"))
+
+# select can be used to rearrange the order of the columns
+NB_data %>%
+  select(MYC_expr, MYCN_expr, everything())
+```
+
+A number of useful helper functions exist that you can use with `select()`:
+
+* `starts_with("abc")` matches names that begin with "abc"
+* `ends_with("xyz")` matches names that end with "xyz"
+* `contains("123")` matches names that contain "123"
+
+Can you do the same for the covid hospitalisations?
+
+```{r}
+# select the REGION and TOTAL_IN columns
+covid_hospitalisations_data %>%
+  select(REGION, TOTAL_IN)
+
+# drop the REGION and TOTAL_IN columns
+covid_hospitalisations_data %>%
+  select(-REGION, -TOTAL_IN)
+
+# select all columns starting with NEW
+covid_hospitalisations_data %>%
+  select(starts_with("NEW"))
+```
+
+## Mutate the data to create new columns
+
+If we want to make new columns/variables, that are combinations or abstractions of other columns/variables, mutate is the function to use. `mutate()` always adds new columns at the end of your dataset. You can combine mutate with arithmetic operators (+ , -, /, ^), logs (`log2()`, `log10()`), offsets (`lead()` and `lag()` ), cumulative operators (`cumsum()`, `cummean()`), ranking (`row_number()`,`percent_rank()`), ...
+
+```{r}
+# calculate age in years
+NB_data %>% 
+  mutate(age_years = age / 365.25) %>%
+  select(age, age_years, everything())
+
+# calculate age at death by filtering those patients that died and take the sum of age at diagnosis plus the OS days
+NB_data %>%
+  filter(OS_bin == 1) %>%
+  mutate(age_at_death = (age + OS_day) / 365.25) %>%
+  select(age, age_at_death, everything())
+
+#logs of expression values
+NB_data %>%
+  mutate(logMYCN_expr = log2(MYCN_expr), logMYC_expr = log2(MYC_expr))
+
+#ranking of the overall survival days
+NB_data %>% 
+  mutate(rankOS_day = rank(OS_day))
+
+# mark patients in stage 1/2 and 4S as low risk, the others as high risk
+NB_data %>%
+  mutate(risk = case_when(stage == "1"~ "low",
+                          stage == "2"~ "low",
+                          stage == "4S" ~"low",
+                          TRUE ~ "high")) %>%
+  select(stage, risk)
+
+```
+
+Practice!
+
+```{r}
+# calculate the ratio of positive tests on total tests
+covid_tests_data %>%
+  mutate(ratio_ptests = TESTS_ALL_POS / TESTS_ALL)
+
+# mark all entry points/rows with more than 200 positive tests as "high risk days"
+covid_tests_data %>%
+  mutate(risk = case_when( TESTS_ALL_POS >= 200 ~ "high",
+                           TRUE~"low"))
+```
+
+## Group the data and summarise
+
+Sometimes we want to perform mutate like functions but instead of the whole data frame, we would like to do this per group of observations (eg. those with a MYCN_status of 0 compared to those of 1). In this case we can use `group_by()` combined with either `mutate()` (number of observations stay the same) or `summarise()` (reduction to one rows/observation per group). In addition, we could use `summarise()` on the tibble without `group_by()` as well, but this will return just a single value.
+
+Usefull summary functions:
+
+* location: `mean(x)` and `median(x)`
+* spread: the standard deviation `sd(x)`, the interquartile range `IQR(x)` and median absolute deviation `mad(x)`
+* rank: minimum `min(x)`, 25% quantile `quantile(x,0.25)`, maximum `max(x)`
+* position: `first(x)`, `nth(x,2)`, `last(x)`
+* counts: to count `n(x)` or to distinct values `n_distinct(x)`
+
+```{r}
+# get the total number of patients
+NB_data %>%
+  summarise(nobserv = n())
+
+# get the number of observations per stage group
+NB_data %>% 
+  group_by(stage) %>% 
+  summarise(n())
+
+# get the mean expression for the MYCN_status 0 and 1 patients
+NB_data %>% 
+  group_by(MYCN_status) %>% 
+  summarise(meanMYCN_expr = mean(MYCN_expr), meanMYC_expr = mean(MYC_expr))
+
+# you can also group by two variables
+NB_data %>%
+  group_by(stage, MYCN_status) %>%
+  summarise(meanMYCN_expr = mean(MYCN_expr), meanMYC_expr = mean(MYC_expr))
+
+# to remove the grouping, use ungroup
+NB_data %>%
+  group_by(stage, MYCN_status) %>%
+  ungroup() %>%
+  summarise(meanMYCN_expr = mean(MYCN_expr), meanMYC_expr = mean(MYC_expr))
+```
+
+
+Now its again your turn to practice `group_by()` and `summarise()`!
+
+```{r}
+# group by age category, return the sum of the deaths for each group
+covid_mortality_data %>%
+  group_by(AGEGROUP) %>%
+  summarise(sum(DEATHS))
+
+# group by date and region, return the sum of deaths for each group
+covid_mortality_data %>%
+  group_by(DATE, REGION) %>%
+  summarise(sum(DEATHS))
+
+# filter the hospitalisations in flanders, group by province and calculate the mean of TOTAL_IN_ICU
+covid_hospitalisations_data %>%
+  filter(REGION == "Flanders") %>%
+  group_by(PROVINCE) %>%
+  summarise(mean(TOTAL_IN_ICU))
+```
+
+
+## Practice data transformations
+
+### Females deaths per age group
+
+We want to know how many female covid patients died per age group.
+First filter the females from the mortality table, than group by age group and get the sum of the deaths for each of the groups.
+
+```{r}
+covid_mortality_data %>%
+  filter(SEX == "F") %>%
+  group_by(AGEGROUP) %>%
+  summarise(sumDEATHS = sum(DEATHS))
+```
+
+### Calculate the number of positive tests performed after september 1th for each province in Flanders
+
+First filter the dates after september 1th and Flanders, than group_by the province and calculate the positive tests.
+
+```{r}
+covid_tests_data %>%
+  filter(DATE >= "2020-09-01" & REGION == "Flanders") %>%
+  group_by(PROVINCE) %>%
+  summarise(sumPOSTESTS = sum(TESTS_ALL_POS))
+```
+
+### Define the first male death between 25-44
+
+First filter males and the desired age group, than arrange your data so you can define the first date.
+
+```{r}
+covid_mortality_data %>%
+  filter(SEX == "M" & AGEGROUP == "25-44") %>%
+  arrange(DATE)
+```
+
+### Define the dates where the positive test ratio is more than 20%
+
+Calculate the sums for both TESTS_ALL and TESTS_POS_ALL over all dates by using group_by and summarise. Mutate the data and add in this way an additional column which gives you the ratio. At last filter the dates where this ratio is more than 0.2.
+
+```{r}
+covid_tests_data %>%
+  group_by(DATE) %>%
+  summarise(sumTESTS_ALL= sum(TESTS_ALL), sumTESTS_ALL_POS = sum(TESTS_ALL_POS)) %>%
+  mutate(POSRATIO = sumTESTS_ALL_POS/sumTESTS_ALL) %>%
+  filter(POSRATIO > 0.2)
+```
+
+# Working with Dates and Times
+
+Depending on your data, dates and times might be important variables for your analysis. Depending on the collection, the dates and times might be in a country/region specific format. The libary lubridate will give you many options to parse dates and times. See some examples:
+
+```{r}
+#install.packages("lubridate")
+library(lubridate)
+
+# date of today
+today()
+
+# year of today
+year(today())
+
+# add 2 years to the date
+today() + years(2)
+
+# lower date to latest month
+floor_date(today(), unit = "month")
+
+# to nearest month
+round_date(today(), unit = "month")
+
+# calculate days to next birthday
+next_bday <- dmy("21/05/2022")
+next_bday - today()
+
+# whats the weekday of your next birthday?
+wday(next_bday, label=TRUE)
+
+# calculated how old are you in days
+bday <- dmy("21/05/1989")
+today() - bday 
+```
+
+# Tidy data
+
+Tidy data means that:
+
+* Each variable must have its own column.
+* Each observation must have its own row.
+* Each value must have its own cell.
+
+Tidy data has advantages. It makes that you have a consistent data structure to store and work with the data. 
+It looks a logical principle, however, most data that you will encounter isn't tidy. If you don't think upfront about the data structure, chances are high you end up with an untidy data frame.
+
+## Join tibbles
+
+Tibbles can be combined to form a merged tibble. This is especially interesting when you're interested in the relation between two columns in two different data frames.
+
+For our COVID-data we could merge the cases with the tests based on the date. The problem is that the covid cases don't distingish between the sexes and age groups. Therefore, we will first convert the COVID cases table to by using group_by and summarise as we have seen before.
+
+Different options to join exist:
+
+* `inner_join()` : return all rows from x where there are matching values in y, and all columns from x and y. If there are multiple matches between x and y, all combination of the matches are returned.
+* `left_join()` : return all rows from x, and all columns from x and y. Rows in x with no match in y will have NA values in the new columns. If there are multiple matches between x and y, all combinations of the matches are returned.
+* `right_join()` : return all rows from y, and all columns from x and y. Rows in y with no match in x will have NA values in the new columns. If there are multiple matches between x and y, all combinations of the matches are returned.
+* `full_join()` : return all rows and all columns from both x and y. Where there are not matching values, returns NA for the one missing.
+
+Since we want every date in our final table when it is in one of the two tables, we will use `full_join()`.
+
+```{r}
+#combining test data frame with cases
+full_join(covid_case_data %>% 
+  group_by(DATE,PROVINCE,REGION) %>%
+  summarise(TOTAL_CASES = sum(CASES)),
+  covid_tests_data, 
+  by=c("DATE"="DATE","PROVINCE"="PROVINCE","REGION"="REGION"))
+
+#since we have the same naming in both tables, we can drop the 'by'
+full_join(covid_case_data %>% 
+  group_by(DATE,PROVINCE,REGION) %>%
+  summarise(TOTAL_CASES = sum(CASES)),
+  covid_tests_data)
+```
+
+Can you try to join the mortality table (summed up over the regions, without taking into account the age groups) with the cases table (summed up over the regions, without taking into account the age groups), but only for those days where people died? Which type of join do you need to use?
+
+```{r}
+left_join(covid_mortality_data %>%
+            group_by(DATE, REGION) %>%
+            summarise(TOTAL_DEATHS = sum(DEATHS)), 
+          covid_case_data %>%
+            group_by(DATE, REGION) %>%
+            summarise(TOTAL_CASES = sum(CASES)))
+```
+
+## Pivot wider and longer
+
+In some cases, especially for plotting, you want to reshape your data. Convert rows to columns, or make a wider format, or longer. This you can do with `pivot_wider()` and `pivot_longer()`. 
+
+`pivot_longer()` you will use in cases where you have for instance the number of HIV cases of the year 2000, 2010 and 2020 for every country, which each take a separate column. You could convert this to a tibble where you have a column year and a column HIV cases. Your data frame will be longer than the original since you have more entries (one for each year).
+
+`pivot_wider()` will do the opposite. An example could be found in the covid data, where we want to have a variable/column for each age group instead of an entry/row. We go from a long (more rows) format to a wider (more columns).
+
+```{r}
+covid_case_data <- read_csv("Data/COVID19BE_CASES_AGESEX.csv")
+covid_case_data 
+```
+
+
+```{r}
+# We want to have cases per age group as columns, the values that are not found are zero
+covid_case_data_agegroup_wide <- covid_case_data %>%
+  pivot_wider(names_from = AGEGROUP, values_from = CASES, values_fill=0)
+
+covid_case_data_agegroup_wide
+```
+
+## Rownames to columns and the other way around
+
+In some cases you need a data frame with rownames. You can easily convert columns (only with unique names) to rownames and the opposite way around with `column_to_rownames()` or `rownames_to_column()`.
+
+```{r}
+#you will notice this line is not working
+#column_to_rownames(covid_hospitalisations_data,"DATE")
+
+#if you group_by and summarise you create unique values
+column_to_rownames(covid_hospitalisations_data %>% 
+                     group_by(DATE) %>% 
+                     summarise(TOTAL_IN = sum(TOTAL_IN)),"DATE") %>%
+  head()
+  
+```
+
+

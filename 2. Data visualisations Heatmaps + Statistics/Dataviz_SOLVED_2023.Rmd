@@ -1,0 +1,1092 @@
+---
+title: "Datavisualisation best practices"
+author: "Celine Everaert"
+date: "10/21/2023"
+output: 
+  bookdown::html_document2:
+    theme: paper
+    highlight: tango
+    code_folding: show
+    toc: true
+    number_sections: true
+    toc_float: true
+    toc_depth: 3
+---
+
+You already learned to visualize the data in plots (in ggplot and ComplexHeatmap). Here we will go deeper and give some information on best practices for data visualisation. This is an optional Rmarkdown exercise.
+
+# Preparation
+
+We will use the same datasets as before for demonstration purposes.
+
+```{r}
+library(tidyverse)
+library(lubridate)
+
+# read in tests
+covid_tests_data <- read_csv("Data/COVID19BE_tests.csv")
+
+covid_case_data <- read_csv("Data/COVID19BE_CASES_AGESEX.csv")
+
+# check again the column types of all three data frames, would you change any?
+covid_mortality_data <- read_csv("Data/COVID19BE_MORT.csv")
+covid_mortality_data$SEX <- as.factor(covid_mortality_data$SEX)
+
+covid_hospitalisations_data <- read_csv("Data/COVID19BE_HOSP.csv")
+
+NB_data <- read_csv("Data/NB_data.csv", col_types = "cfcddfdfdd")
+
+```
+
+# Introduction to good data visualisation
+
+In the previous session, you learned how to work with ggplot. You might have noticed that some data visualizations are better than others. Open a newspaper or a scientific paper and you will see directly differences between the articles. Its hard to just have a handful of simple rules for a good visualization that work in all circumstances. Graphs should be effective and thus bring your message without misinterpretation. Before you start, the first question you should ask yourself is, who will look at it, why and what is the message I want to convey. An image for a scientific paper and thus an expert public, will be different than one intended for a general public. Graphs are used to show quantitative data and they are there to tell us about relationships. The numbers themselves without the relationships, are of no use.
+
+Making a graph or not? That's a question you should ask yourself before you start. In some cases a simple table or just the number(s) might be more informative. eg, in a presentation where you want to show the percentage of lung cancer deaths, there is no need to make a complex graph from it. Choosing the right communication medium is a fundamental challenge. Try to represent your message in a way that your public understands it the best. When to use tables? Definitely if you want to look up specific values, compare values (not series of values) to each other, when precise values are required. Graphs on the other hand are ideal if the message is in the pattern or trend or when relationships need to be revealed.
+
+## What can go wrong
+
+We will discuss about colors, which type of graphs to use for which type off data. Those chooses are not only a matter of good taste, but some approaches work just better. Its a matter of visual perception. What makes bad figures bad?
+
+There are three varieties of bad visualizations, but often its a combination of these that go wrong:
+
+* *aesthetic*: tasteless, ugly or inconsistent design. Less is more, can be one of the ideas that you take along when making graphs. Or in other words, maximize the data to ink ratio. We can often clean up graphs by removing unneeded colors, backgrounds, delete gridlines, axis marks, needless keys and legends. However, in some cases you might remove too much, some of these elements are helpful in the interpretation of the graph. Always asses thoroughly if you need the element or not. Often in newspapers you might find graphs such as Figure \@ref(fig:monster)). These are hard to interpret because of the amount of noise.
+
+```{r monster, echo = FALSE, fig.align = 'center', out.width = "500px", fig.cap = '"Monstrous Costs" by Nigel Holmes (1982)'}
+knitr::include_graphics("Figures_DataViz/Graph_Monsters.jpg")
+```
+
+* *substantive*: problems with the presented data. The *New York Times* ran the headline "How Stable Are Democracies? 'Warn Signs Are Flashing Red'" in 2016. The graph in the article (Figure \@ref(fig:nytimesdemo))) seemed to show an alarming decline. Although its an elegant graph, the figure is tricky to interpret. The x-axis groups the participants of the survey by the decade they are born in. Based on the line that is used, you would suppose that the same people are interrogated every decade, but this is not the case. In that way it would be better to use bars. On top, the authors didn't ask a yes/no question to the participants. They asked to score the importance of living in a democracy on a scale of 10, after which they only displayed the percentage of people giving 10/10. If they would have taken into account all values, the visualization and thus interpretation would be different.
+
+```{r nytimesdemo, echo = FALSE, fig.align = 'center', out.width = "500px", fig.cap = '"The Signs of Deconsolidation", *Journal of Democracy*'}
+knitr::include_graphics("Figures_DataViz/Graph_NYTimesDemo.png")
+```
+
+* *perceptual*: confusing or misleading. Using an area instead of a length, makes differences between observations looking larger then they are. In excel, 3D barplots used to be a standard, but from 3D boxplots it is hard to extract the exact value and perception of the differences might depend on the used angle of the dimensions. The same is the case for stacked bar charts used for absolute numbers. An example is this complex visualization showing the amounts that soccer players earned in 2013 per state. Can you see which player earned the least? 
+
+```{r salariestackedbars, echo = FALSE, fig.align = 'center', out.width = "500px", fig.cap = 'MLS salaries in 2013 '}
+knitr::include_graphics("Figures_DataViz/Graph_Salaries.png")
+```
+
+Luckily, this was solved by making an interactive version. Which can be found (here)[https://public.tableau.com/app/profile/fennsk/viz/MLSPost-DempseySalaries/MLSPUDashboard].
+
+### Exercise 1
+
+Look at the first three figures in the Figures_DataViz folder. What are the things that are not good in these? How would you improve?
+
+Figure 1
+
+```{r ex1Figure1, echo = FALSE, fig.align = 'center', out.width = "500px", fig.cap = ' '}
+knitr::include_graphics("Figures_DataViz/EX1_Figure1.png")
+```
+
+ANSWER: 
+
+Figure 2
+
+```{r ex1Figure2, echo = FALSE, fig.align = 'center', out.width = "500px", fig.cap = ' '}
+knitr::include_graphics("Figures_DataViz/EX1_Figure2.png")
+```
+
+ANSWER:
+
+Figure 3
+
+```{r ex1Figure3, echo = FALSE, fig.align = 'center', out.width = "500px", fig.cap = ' '}
+knitr::include_graphics("Figures_DataViz/EX1_Figure3.jpg")
+```
+
+ANSWER:
+
+
+## Channels of Representing Data
+
+A sense of how we see things will help us to figure out which visualizations work and why others don't. The human eye should be able to perceive the information and the brain to understand. Its thus a matter of sensation and perception. Think about those graphics where you can see two things. Do you see a vase/urn or two faces? Not everyone has the same visual perception, but there are some factors which get more priority than others.
+
+```{r visualperception, echo = FALSE, fig.align = 'center', out.width = "300px", fig.cap = 'Principle of visual perception'}
+knitr::include_graphics("Figures_DataViz/Fig_VisualPerception.gif")
+```
+
+When looking to visualizations, we look for structure, even in random data. The relationship that we make between visual information are called 'gestalt rules'. In general, we are grouping or classifying:
+- proximity: things that are near to each other seem to be more related
+- similarity: things that look alike (in color, size, shape or orientation) are more related
+- enclosure: objects that have a boundary around them are set apart from the objects that are not in the boundary
+- connection: things that are visually tied are more related and perceived as belonging to the same group
+
+Or brain will also complete things that are incomplete (continuity/closure).
+
+```{r gestalt, echo = FALSE, fig.align = 'center', out.width = "300px", fig.cap = 'Gestalt Laws'}
+knitr::include_graphics("Figures_DataViz/Fig_GestaltLaws.png")
+```
+
+Some of the visual cues are stronger than others. Visually, we find it harder to interpret areas. These are often exaggerated. Also changes in slopes, especially in 3D is weak. Besides the inference of visual relationships between visible elements, we also add an interpretation to the graph, an additional layer to perception. Even well-informed viewers might do worse than we think. If you made a final graph, it's thus important to show it to peers and let them explain you what they see. Is this the message that you wanted to convey?
+
+# Some tips and tricks about color use
+
+A color is made upon three attributes: hue, saturation and lightness. Thus even black and white are colors.
+
+- *Hue* is the precise term of what we normally think of as color. 
+- *Lightness* is the degree to which a color appears dark or bright. 0% is fully dark or black, 1000 % is fully light.
+- *Saturation* of a hue is the degree to which a particular hue fully exhibits its essence. 0% is fully white, while 100% is fully saturated.
+
+## Discrete data
+
+Color is often used to distinguish discrete items, such as countries, sample types, ... In this case we use it as a qualitative color scale and thus we want them to look clearly distinct from each other. In the case you just want to distinguish one categories from another, and notting stands out, you are the best to use colors that have the same saturation and lightness. On the other hand, if you want to attract the focus to one of the categories, you can play around with differences in saturation and/or lightness.
+
+Many color scales are available. I like the build in color schemes of **RColorBrewer**, which we already used in the previous notebooks. The second example is one of their color schemes.
+
+```{r}
+#installation of packages used to display the colors
+#install.packages("devtools")
+library(devtools)
+#devtools::install_github("wilkelab/cowplot")
+#install.packages("colorspace", repos = "http://R-Forge.R-project.org")
+#devtools::install_github("clauswilke/colorblindr")
+library(colorblindr)
+library(cowplot)
+#package which contains nice color schemes
+library(RColorBrewer)
+library(tidyverse)
+```
+
+
+```{r qualitative-scales, echo = FALSE, fig.align = 'center', fig.width=5*6/4.2, fig.asp=3*.14, fig.cap = 'qualitative-scales'}
+#this is just a way to show you the colors without having data, you don't need to understand the code
+p1 <- gg_color_swatches(7) + 
+  scale_fill_OkabeIto() + ggtitle("Okabe Ito") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p2 <- gg_color_swatches(7) + 
+  scale_fill_brewer(type = "qual", palette = "Dark2") + ggtitle("ColorBrewer Dark2") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p3 <- gg_color_swatches(7) + 
+  scale_fill_hue() + ggtitle("ggplot2 hue") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+plot_grid(p1, p2, p3, ncol = 1)
+```
+If you want to highlight colors example palettes are:
+
+```{r accent-scales,  echo = FALSE, fig.align = 'center', fig.width=5*6/4.2, fig.asp=3*.14, fig.cap = 'accent-scales'}
+accent_OkabeIto <- palette_OkabeIto[c(1, 2, 7, 4, 5, 3, 6)]
+accent_OkabeIto[1:4] <- desaturate(lighten(accent_OkabeIto[1:4], .4), .8)
+accent_OkabeIto[5:7] <- darken(accent_OkabeIto[5:7], .3)
+p1 <- gg_color_swatches(7) + 
+  scale_fill_manual(values = accent_OkabeIto) + ggtitle("Okabe Ito Accent") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p2 <- gg_color_swatches(7) + 
+  scale_fill_manual(values = c("gray60", "gray70","gray80", "gray90", "#C95C4F",   '#83A121', '#6B8AD5')) + ggtitle("Grays with accents") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p3 <- gg_color_swatches(7) + 
+  scale_fill_brewer(type = "qual", palette = "Accent") + ggtitle("ColorBrewer Accent") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+plot_grid(p1, p2, p3, ncol = 1)
+```
+
+## Continuous data
+
+But color can also be used to represent data values, during the session on heatmaps you used this quite a lot. The colors than indicate if the value is smaller or larger and how distinct they are. For the latter one, it is important that the colors are perceived uniformly across its range. Sequential scales can be based on a single hue e.g. a blue scale, or on multi-hues e.g. viridis scale (very popular amongst R users).
+
+```{r sequential-scales,  echo = FALSE, fig.align = 'center', fig.width=5*6/4.2, fig.asp=3*.14, fig.cap = 'equential-scales'}
+
+p1 <- gg_color_swatches(7) + 
+  scale_fill_brewer(type = "seq", palette = "Blues", direction = -1) + ggtitle("ColorBrewer Blues") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p2 <- gg_color_swatches(7) + 
+  scale_fill_discrete_sequential("Heat", rev = FALSE) + ggtitle("Heat") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p3 <- gg_color_swatches(7) + 
+  scale_fill_viridis_d() + ggtitle("Viridis") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+plot_grid(p1, p2, p3, ncol = 1)
+```
+Sometimes we need deviation in two directions relative to a neutral midpoint, e.g. as we used for the heatmaps. For this applications we use a diverging color scale.
+
+```{r diverging-scales, echo = FALSE, fig.align = 'center', fig.width=5*6/4.2, fig.asp=3*.14, fig.cap = 'diverging-scales'}
+p1 <- gg_color_swatches(7) + 
+  scale_fill_discrete_divergingx(palette = "Earth") + ggtitle("CARTO Earth") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p2 <- gg_color_swatches(7) + 
+  scale_fill_brewer(type = "div", palette = "PiYG") + ggtitle("ColorBrewer PiYG") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+p3 <- gg_color_swatches(7) + 
+  scale_fill_discrete_diverging("Blue-Red") + ggtitle("Blue-Red") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+plot_grid(p1, p2, p3, ncol = 1)
+```
+
+## Color packages and tools
+
+The RColorBrewer package contains way more palettes then we displayed here. You can inspect these as such:
+
+```{r}
+display.brewer.all()
+```
+
+When choosing colors, it is important to consider that a substantial part of the population is color blind. Up to 1 out of 12 men have this condition. If you are thus presenting your graphs in front of a full room, chances are high that some color blind people will be there. Color schemes that you must avoid are the green-red ones. Luckily **RColorBrewer** can show us which of its schemes are color blind proof:
+
+```{r}
+display.brewer.all(colorblindFriendly = TRUE)
+```
+
+
+Another tool I frequently use to create my own color schemes is (coolors)[https://coolors.co]. You can quickly generate nice looking color palettes, even inspired by pictures or artworks you like, and export the RGB color codes to use in R.
+Go to the website and put your favorite artwork in the generator. Export the RGB colors (consisting of a six digit combination), which can be used in R if you put a hashtag in front of them.
+
+What do you think about this Marilyn Monroe Andy Warhol inspired color scheme?
+
+```{r Warhol Coolors}
+gg_color_swatches(5) + 
+  scale_fill_manual(values = c('#B48234', '#3E3125', '#5D4D28', '#89C8BE', '#EA9AA1')) + ggtitle("Coolors Monroe") +
+  theme(plot.margin = margin(7, 1.5, 7, 1.5))
+```
+
+## Colors vs shapes
+
+The use of colors is often preferred above the use of shapes. It's easier to distinguish. If you make the points with the different shapes a bit larger compared to the standards in ggplot, it will ease the interpretation. In the case where you would like to highlight one specific condition, the combination of colors en shapes might be useful. 
+
+```{r}
+# we use an in-build dataset mtcars to quickly demonstrate this feature, mpg and disp are both quantitative variables, cyl is a category
+# colors as qualitative values, 
+mtcars %>%
+  ggplot(aes(x=mpg, y=disp, color=as.factor(cyl))) +
+  geom_point(cex=2)+
+  theme_classic() +
+  #we want the axis to cross each other in (0,0) or the origin
+  scale_y_continuous(limits = c(0, 500), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 40), expand = c(0, 0)) +
+  #we choose the color palette from Rcolorbrewer
+  scale_color_brewer(palette = "Set2")+
+  #we change the title of our color legend
+  labs(color="cyl")
+
+# colors as sequential values
+mtcars %>%
+  ggplot(aes(x=mpg, y=disp, color=as.factor(cyl))) +
+  geom_point(cex=2)+
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 500), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 40), expand = c(0, 0)) +
+  #another color palette is choose, instead of a discrete set, we go for a continous one
+  scale_color_brewer(palette = "Oranges")+
+  labs(color="cyl")
+
+# shapes to represent the categories, change the aes color to shape
+mtcars %>%
+  ggplot(aes(x=mpg, y=disp, shape=as.factor(cyl))) +
+  geom_point()+
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 500), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 40), expand = c(0, 0)) +
+  labs(shape="cyl")
+
+#combination of shapes and colors to highlight one category
+mtcars %>%
+  ggplot(aes(x=mpg, y=disp, shape=as.factor(cyl), color=as.factor(cyl))) +
+  geom_point(cex=2)+
+  theme_classic() +
+  scale_y_continuous(limits = c(0, 500), expand = c(0, 0)) +
+  scale_x_continuous(limits = c(0, 40), expand = c(0, 0)) +
+  scale_color_manual(name = "cyl", values = c("#BD3828", rep("#808080", 2)))+
+  scale_shape(name="cyl")
+```
+
+
+# What type of graph you should chose?
+
+Before you choose a graph type, you should asses which type of variables you have. Possible types are:
+
+* numerical continuous eg. 1.23, 1.11, 3.14
+* numerical discrete eg. 1, 2, 3
+* categorical unordered, eg. cat, dog, fish
+* categorical ordered, eg, excellent, good, fair
+* date or time
+* text
+
+## Amounts
+
+### Barplots
+
+In many scenarios, we want to compare sets of numbers eg. the sales of different brands, the number of participants from different countries, ... In all these cases we have a combination of categories (brands, countries, ...) and a continuous numerical value. The standard visualization in this case is a bar plot, however, in some specific situations dot plots or a heatmap will be the better alternative. 
+
+To show you some good practices, we will prepare two tibbles from the COVID data that are respectively the female deaths over the age groups in 2020 and the female cases per province in 2020. I will store these in a new tibble, as we will reuse those, remark that in the last practical session we often directly piped the output to ggplot, since we only used the newly shaped data once.
+
+```{r create_bar_tibbles}
+Fdeaths_per_age_group_in2020 <- covid_mortality_data %>%
+  #remove NA values
+  drop_na() %>%
+  #extract the year
+  mutate(YEAR = year(DATE))%>%
+  #filter females and entries for the year 2020
+  filter(SEX=="F" & YEAR == 2020) %>%
+  #calculate deaths per age group
+  group_by(AGEGROUP) %>%
+  summarise(TOTALDEATHS = sum(DEATHS))
+
+Fcases_per_province_in2020 <- covid_case_data %>%
+  drop_na() %>%
+  mutate(YEAR = year(DATE))%>%
+  filter(SEX=="F" & YEAR == 2020) %>%
+  #calculate deaths per province
+  group_by(PROVINCE) %>%
+  summarise(TOTALCASES = sum(CASES))
+```
+
+Since we deal with amounts, we will visualize the data with vertical bars. The standard visualization would be the one displayed in Figure \@ref(fig:boxplotbasic)). To increase the data to noise ratio, we could remove the x-axis. I also prefer that my y-axis starts at zero, since we, in this case, can't measure negative values. After cleaning up the boxplot we could retrieve the one displayed in Figure \@ref(fig:boxplotclean)). Which one do you like the most?
+
+```{r barplotbasic, fig.align = 'center'}
+ggplot(Fdeaths_per_age_group_in2020, aes(x=AGEGROUP, y= TOTALDEATHS))+
+  geom_col()
+```
+
+```{r barplotclean, fig.align = 'center'}
+ggplot(Fdeaths_per_age_group_in2020, aes(x=AGEGROUP, y= TOTALDEATHS))+
+  geom_col()+
+  theme_classic() +
+  #starting axis at 0
+  scale_y_continuous(expand = c(0, 0)) +
+  #removing noise
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())+
+  labs(x="", y="total covid deaths in 2020")
+```
+
+In the previous case, we were lucky with our small x-axis labels. When we make the same plot for our second tibble with the cases per province, you will see that the labels do overlap and are thus not readable (Figure \@ref(fig:boxplotoverlap))). We have two options, either we rotate the labels (Figure  \@ref(fig:boxplotrotatelables))) but this might still be a problem, or rotate the graph (Figure \@ref(fig:boxplotrotateaxis))).
+Another thing we can adapt to make the interpretation easier for the reader, is the order of the bars. Now the order is defined on the alphabetical order of the province name, an arbitrary way, we could order them based on the covid deaths. In the previous example, it was logical to order them based on increasing age.
+
+```{r barplotoverlap, fig.align = 'center'}
+ggplot(Fcases_per_province_in2020, aes(x=PROVINCE, y= TOTALCASES))+
+  geom_col()+
+  theme_classic()+
+  #starting axis at 0
+  scale_y_continuous(expand = c(0, 0)) +
+  #removing noise
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())+
+  labs(x="", y="total covid deaths in 2020")
+```
+
+```{r barplotrotatelables, fig.align = 'center', out.width = "300px"}
+#reorder by TOTALCASES
+ggplot(Fcases_per_province_in2020, aes(x=reorder(PROVINCE, -TOTALCASES), y=TOTALCASES))+
+  geom_col()+
+  theme_classic()+
+  #starting axis at 0
+  scale_y_continuous(expand = c(0, 0)) +
+  #removing noise and rotate labels
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank(), axis.text.x = element_text(angle=45, vjust = 1, hjust = 1))+
+  labs(x="", y="total covid deaths in 2020")
+```
+
+```{r barplotrotateaxis, fig.align = 'center', out.width = "300px"}
+ggplot(Fcases_per_province_in2020, aes(x=reorder(PROVINCE, TOTALCASES), y=TOTALCASES))+
+  geom_col()+
+  theme_classic()+
+  #starting axis at 0
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_flip()+
+  #removing noise
+  theme(axis.line.y = element_blank(), axis.ticks.y = element_blank())+
+  labs(x="", y="total covid deaths in 2020")
+```
+
+### Grouped or Stacked bars
+
+For more complex data when a third dimension is needed and in the case you have two categorical and one quantitative variable, grouped or stacked bars might be an option. In a grouped bar plot, we draw a group of bars at each position along the x axis, determined by one categorical variable, and then we draw bars within each group according to the other categorical variable. In a stacked bar chart, we plot the of each other. The stacked bars are often hard to interpret, especially if more than 2 groups are displayed. It might work if only two groups are available and if the sum of the bars is 100% or 1. Later on in this notebook, we will cover another alternative, namely small multiples.
+
+```{r barstackedvsdodge}
+covid_mortality_data %>%
+  drop_na()%>%
+  #calculate per age group and per sex the number of deaths
+  group_by(AGEGROUP, SEX) %>%
+  summarise(sumDEATHS = sum(DEATHS)) %>%
+  ggplot(aes(x = SEX, y = sumDEATHS, fill = AGEGROUP)) +
+  geom_col() +
+  theme_classic() +
+  #clean the x-axis
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())+
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Set2")+
+  labs(title = "The deaths over the age groups for both genders.", x = "gender", y = "Number of deaths per age group")
+
+covid_mortality_data %>%
+  drop_na()%>%
+  group_by(AGEGROUP, SEX) %>%
+  summarise(sumDEATHS = sum(DEATHS)) %>%
+  ggplot(aes(x = SEX, y = sumDEATHS, fill = AGEGROUP, group=AGEGROUP)) +
+  # we change the position to dodge to display it next to each other
+  geom_col(position = "dodge") +
+  theme_classic() +
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())+
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Set2")+
+  labs(title = "The deaths over the age groups for both genders.", x = "gender", y = "Number of deaths per age group")
+
+covid_mortality_data %>%
+  drop_na()%>%
+  group_by(AGEGROUP, SEX) %>%
+  summarise(sumDEATHS = sum(DEATHS)) %>%
+  ggplot(aes(x = AGEGROUP, y = sumDEATHS, fill = SEX)) +
+  geom_col() +
+  theme_classic() +
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())+
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_manual(values=c("lightblue","lightpink"))+
+  labs(title = "The deaths over the age groups for both genders.", x = "gender", y = "percentage of deaths per age group")
+
+```
+
+### Bar versus dots for small changes
+
+For small changes, the use of dots might be better compared to bars. When you use barplots, you should always start your y-axis at zero. Not doing so gives a wrong impression of the data and is scientifically incorrect. We will generate some dummy data (with small changes) to demonstrate this. Do you understand the steps used?
+
+```{r tibbleratiosprovince}
+ratiopos_per_province_in2020 <- covid_tests_data %>%
+  drop_na() %>%
+  mutate(YEAR = year(DATE))%>%
+  filter(YEAR == 2020) %>%
+  group_by(PROVINCE) %>%
+  summarise(TOTALTEST = sum(TESTS_ALL), POSTEST=sum(TESTS_ALL_POS), POSTESTRATE = POSTEST/TOTALTEST, NEGTESTRATE = 1-POSTESTRATE, REGION=max(REGION))
+```
+
+See here multiple examples. The first one is the better option, namely using dots. The third is totally incorrect to do. The last one is an alternative for the bars. Since the size of the dots make it hard to extract the values exactly, the values are explicitly added.
+
+```{r pointsvsbars, fig.align = 'center', out.width = "300px"}
+ggplot(ratiopos_per_province_in2020, aes(x=reorder(PROVINCE, NEGTESTRATE), y=NEGTESTRATE, color=REGION))+
+  geom_point()+
+  theme_classic()+
+  coord_flip()+
+  #removing noise
+  theme(axis.line.y = element_blank(), axis.ticks.y = element_blank())+
+  labs(x="", y="total covid deaths in 2020")
+
+ggplot(ratiopos_per_province_in2020, aes(x=reorder(PROVINCE, NEGTESTRATE), y=NEGTESTRATE, fill=REGION))+
+  geom_col()+
+  theme_classic()+
+  #starting axis at 0
+  scale_y_continuous(expand = c(0, 0)) +
+  coord_flip()+
+  #removing noise
+  theme(axis.line.y = element_blank(), axis.ticks.y = element_blank())+
+  labs(x="", y="total covid deaths in 2020")
+
+#incorrect to do
+ggplot(ratiopos_per_province_in2020, aes(x=reorder(PROVINCE, NEGTESTRATE), y=NEGTESTRATE, fill=REGION))+
+  geom_col()+
+  theme_classic()+
+  #starting axis not at 0
+  coord_flip(ylim=c(0.75, 0.95))+
+  #removing noise
+  theme(axis.line.y = element_blank(), axis.ticks.y = element_blank())+
+  labs(x="", y="total covid deaths in 2020")
+
+#or a variation on a bar chart with displayed values
+ggplot(ratiopos_per_province_in2020, aes(x=reorder(PROVINCE, NEGTESTRATE), y=NEGTESTRATE, color=REGION, label=round(NEGTESTRATE,2)))+
+  geom_point(size=10)+
+  geom_segment(aes(x=PROVINCE, xend= PROVINCE, y=0, yend=NEGTESTRATE))+
+  geom_text(color="white", size=3)+
+  theme_classic()+
+  scale_y_continuous(expand = c(0, 0), limits=c(0,1)) +
+  coord_flip()+
+  #removing noise
+  theme(axis.line.y = element_blank(), axis.ticks.y = element_blank())+
+  labs(x="", y="total covid deaths in 2020")
+```
+
+
+## Distributions
+
+In many situations, we like to understand how the distribution of the data is looking. Do we see two groups when looking to expression? Is the expression of gene x different across the tissues in our body?
+
+For the visualization of (single) distributions we can either make use of a histogram, a density plot or a cumulative density plot. These options could also be used to compare multiple distributions, but in this case there are other, more approriate approaches such as boxplots, violinplots, strip charts or ridgeline plots.
+
+Making a precise distribution asks for enough data! You often see papers where boxplots are used to compare the expression in multiple mouse models. But the number of mice in each group is only 3-5. If you then use boxplots or other visualizations of distributions, you make an estimate of way more data points only based on this low number. What should you do instead? If you only have a small amount of data points, plot the data itself instead of a distribution. I added a specific paragraph on this.
+
+### Histograms and densities
+
+Histograms are generated by binning the data in groups. The bin width (group size) might highly define how the histogram is looking like. Tools like ggplot might choose their own bin widths by default. Try to play around with it. What happens when you make it smaller or larger?
+
+```{r histograms}
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  #add a blue histogram, but to make it less intense we put the alpha lower, so its a bit transparent
+  geom_histogram(color="darkblue", fill="darkblue", alpha=0.5)+
+  theme_classic()+
+  scale_y_continuous(limits = c(0,100))+
+  coord_cartesian(ylim=c(0,100), xlim = c(-2,12))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  #changing the binwidth to 0.2
+  geom_histogram(binwidth = 0.2, color="darkblue", fill="darkblue", alpha=0.5)+
+  theme_classic()+
+  scale_y_continuous(limits = c(0,100))+
+  coord_cartesian(ylim=c(0,100), xlim = c(-2,12))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  #changing the binwidth to 0.5
+  geom_histogram(binwidth = 0.5, color="darkblue", fill="darkblue", alpha=0.5)+
+  theme_classic()+
+  scale_y_continuous(limits = c(0,100))+
+  coord_cartesian(ylim=c(0,100), xlim = c(-2,12))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  #changing the binwidth to 1
+  geom_histogram(binwidth =1, color="darkblue", fill="darkblue", alpha=0.5)+
+  theme_classic()+
+  scale_y_continuous(limits = c(0,100))+
+  coord_cartesian(ylim=c(0,100), xlim = c(-2,12))
+  
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  #changing the binwidth to 2
+  geom_histogram(binwidth =2, color="darkblue", fill="darkblue", alpha=0.5)+
+  theme_classic()+
+  scale_y_continuous(limits = c(0,100))+
+  coord_cartesian(ylim=c(0,100), xlim = c(-2,12))
+```
+
+
+But why still using histograms if you could just plot densities? Histograms are easy to calculate, and originate from the time period that those graphs were made by hand. Remember the high school exercises where you had to draw histograms after you tallied for instance the number of people with a certain grade? They might come in handy when you have predefined bin sizes (e.g. you only have age group data and not the specific age, a grade out of 10), but in most other cases I would opt for densities. Densities are usually scaled so that the area under the curve sums up to 1. That's why the values on the y-axis might look different compared to histograms. Be careful with the ends of the density curve in some cases they might go under the measurable values (e.g. an age lower than 0 does not exist). Here the left side looks also 
+
+```{r basicdensities}
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5)+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+NB_data %>%
+  ggplot(aes(x=age))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5)+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+```
+
+Also densities depend on a kernel and bandwith choise. As for histograms, if the bandwidth is too large the smaller features in the distribution disappear, if its too small the distributions becomes too peaky. The kernel has less impact, especially when the number of data points increases.
+
+```{r densitysettings}
+#playing around with the bandwith
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5, bw=0.02)+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5, bw=0.2)+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5, bw=5)+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+#changing the kernel
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5, kernel = "gaussian")+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5, kernel = "epanechnikov")+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5, kernel = "rectangular")+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr))+
+  geom_density(color="darkblue", fill="darkblue", alpha=0.5, kernel = "cosine")+
+  theme_classic()+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+```
+
+If you need to visualize multiple distributions at the same time, avoid stacked bars. These are way too hard to interpret. Its not clear where the bar begins and the heights can't be compared directly to each other. Densities have less problems, but in cases where you have a large overlap (such as in this case), they are hard to interpret too.
+
+```{r multipledensities}
+NB_data %>%
+  ggplot(aes(x=MYCN_expr, color=stage, fill=stage))+
+  geom_histogram( alpha=0.5)+
+  theme_classic()+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2")+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr, color=stage, fill=stage))+
+  geom_density(alpha=0.5)+
+  theme_classic()+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2")+
+  scale_x_continuous(expand= c(0,0))+
+  scale_y_continuous(expand= c(0,0))
+```
+
+
+A solution might be th use of ridgeline plots. For the creation of these plots, we will make use of the *ggridges* package. So install it first.
+
+```{r multipledensitiesridges}
+#install.packages("ggridges")
+library(ggridges)
+NB_data %>%
+  ggplot(aes(x=MYCN_expr, y=stage, color=stage, fill=stage))+
+  geom_density_ridges2(alpha=0.5, scale=1)+
+  theme_classic()+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2")+
+  theme(axis.line.y = element_blank(), axis.ticks.y = element_blank(), legend.position = "none")
+```
+
+### Boxplots and violins
+
+Another option in the previous case are the use of boxplots, violin plots and strip charts. These type of plots are used to compare multiple distributions to each other. So do not use them to inspect just one distribution.
+Violin plots are the most closely related to the density plots. For boxplots its easier to see some summarizing values and with strip charts you see each individual value. In the strip chart and violin plot, you can notice that for stage 4, there are actually two groups, while this is not visible on the boxplots. 
+
+```{r boxplotsvsviolinsvsstrip}
+NB_data %>%
+  ggplot(aes(x=paste0("stage ",stage), y=MYCN_expr, color=stage, fill=stage))+
+  geom_boxplot(alpha=0.5)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2")+
+  labs(x="", y="MYCN expression")
+
+NB_data %>%
+  ggplot(aes(x=paste0("stage ",stage), y=MYCN_expr, color=stage, fill=stage))+
+  geom_violin(alpha=0.5)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2")+
+  labs(x="", y="MYCN expression")
+
+NB_data %>%
+  ggplot(aes(x=paste0("stage ",stage), y=MYCN_expr, color=stage, fill=stage))+
+  geom_jitter(position=position_jitter(0.2), cex=1.2)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2") +
+  stat_summary(fun.data=mean_sdl, mult=1, geom="pointrange", color="darkgray")+
+  labs(x="", y="MYCN expression")
+
+NB_data %>%
+  ggplot(aes(x=paste0("stage ",stage), y=MYCN_expr, color=stage, fill=stage))+
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.4, binwidth = 0.25)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2") +
+  stat_summary(fun.data=mean_sdl, geom="pointrange", color="darkgray")+
+  labs(x="", y="MYCN expression")
+```
+
+
+### Avoid boxplots for small sample sizes.
+
+Another thing to consider is the sample size, imagine we have the previous data, hence only 5 samples per group. In this case, boxplots and violin plots should be avoided! Count the number of summary values a boxplot has, this is actually more than (or equal to) the data points in our data set! In this case its better to just show the data points and thus go for a stripe chart.
+
+```{r boxplotsmallsample}
+NB_data_subsample <- NB_data %>%
+  group_by(stage) %>%
+  sample_n(5)
+
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_boxplot(alpha=0.5)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2")
+
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_violin(alpha=0.5)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2")
+
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_dotplot(binaxis='y', stackdir='center', cex=3,  binwidth = 0.25)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set2")+
+  scale_color_brewer(palette = "Set2") +
+  stat_summary(fun.data=mean_sdl, geom="pointrange", color="darkgray")
+```
+
+
+## Proportions
+
+Instead of showing the count values or absolute numbers, we often want to show how a group represents a proportion of the whole. As an example we could use the proportion of female vs male covid deaths. A typical visualization is a pie chart. Visualizing proportions becomes more challenging, in particular when we have many different pieces or when we want to see changes in proportions over time or across conditions. 
+
+### Simple proportions
+
+For proportions of a small number of groups (especially two) pie charts do work, although a stacked bar plot might be a valid alternative.
+
+```{r simpleprop}
+covid_deaths_per_sex <- covid_mortality_data %>% 
+  drop_na(SEX) %>%
+  arrange(desc(SEX)) %>%
+  group_by(SEX) %>%
+  summarise(deaths = sum(DEATHS)) %>%
+  ungroup() %>%
+  mutate(freq = deaths/sum(deaths), prop = freq * 100) %>%
+  # we add the y position to get a label in the pie chart
+  mutate(ypos = cumsum(prop)-(prop/2), SEX=factor(SEX, levels=c("M","F")))
+
+covid_deaths_per_sex %>%
+ggplot(aes(x="", y=prop, fill=SEX, label = paste0(SEX," = ",round(prop,2),"%"))) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() +
+# remove background, grid, numeric labels 
+  theme(legend.position="none") +
+  geom_text(aes(y = ypos), color = "white", size=6) +
+  scale_fill_manual(values = c("lightblue","lightpink"))
+
+covid_deaths_per_sex %>%
+ggplot(aes(x="", y=prop, fill=SEX)) +
+  geom_bar(stat="identity", color="white") +
+  theme_classic() +
+# remove background, grid, numeric labels 
+  theme(legend.position="none", axis.line.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+  geom_text(aes(y = ypos, label = paste0(SEX," = ",round(prop,3),"%")), color = "white", size=6) +
+  scale_fill_manual(values = c("lightblue","lightpink"))+
+  scale_y_continuous(expand = c(0,0),limits = c(0,100))+
+  labs(y="percentage of deaths")
+```
+
+Sometimes we want to show multiple proportions for different groups. In that case its easier to compare barcharts that are next to each other compared to multiple pie charts.
+
+```{r multipleprop}
+covid_deaths_per_sex_perage <- covid_mortality_data %>% 
+  drop_na(SEX, AGEGROUP) %>%
+  group_by(SEX,AGEGROUP) %>%
+  summarise(deaths = sum(DEATHS)) %>%
+  group_by(AGEGROUP) %>%
+  mutate(freq = deaths/sum(deaths), prop = freq * 100, ypos = cumsum(prop)- 0.5*prop, SEX=factor(SEX, levels=c("M","F")))
+
+covid_deaths_per_sex_perage %>%
+ggplot(aes(x="", y=prop, fill=SEX)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  facet_wrap(~AGEGROUP)+
+  theme_void() +
+# remove background, grid, numeric labels 
+  theme(legend.position="none") +
+  geom_text(aes(x=1.1, y = ypos, label = SEX), color = "white", size=6) +
+  scale_fill_manual(values = c("lightblue","lightpink"))
+
+covid_deaths_per_sex_perage %>%
+ggplot(aes(x=AGEGROUP, y=prop, fill=SEX)) +
+  geom_bar(stat="identity", color="white") +
+  theme_classic() +
+# remove background, grid, numeric labels 
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+  scale_fill_manual(values = c("lightblue","lightpink"))+
+  scale_y_continuous(expand = c(0,0),limits = c(0,100))+
+  labs(title = "The deaths over the age groups for both genders.", legend = "gender", y = "percentage of deaths per age group")
+```
+
+### Multiple proportions
+
+Once you want to show more than 2 (or definitely more than 3) proportions it becomes harder to extract the values from the plots. In those cases it might be better to use individual bars for each category.
+
+```{r}
+covid_deaths_per_agegroup<- covid_mortality_data %>% 
+  drop_na(AGEGROUP) %>%
+  group_by(AGEGROUP) %>%
+  summarise(deaths = sum(DEATHS)) %>%
+  mutate(freq = deaths/sum(deaths), prop = freq * 100) %>%
+  mutate(ypos = cumsum(prop)- 0.5*prop )
+
+covid_deaths_per_agegroup %>%
+ggplot(aes(x="", y=prop, fill=AGEGROUP)) +
+  geom_bar(stat="identity", width=1, color="white") +
+  coord_polar("y", start=0) +
+  theme_void() +
+# remove background, grid, numeric labels 
+  scale_fill_brewer(palette = "Set2")
+
+covid_deaths_per_agegroup %>%
+ggplot(aes(x="", y=prop, fill=AGEGROUP)) +
+  geom_bar(stat="identity", color="white") +
+  theme_classic() +
+# remove background, grid, numeric labels 
+  theme(axis.line.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+  scale_fill_brewer(palette = "Set2")+
+  scale_y_continuous(expand = c(0,0),limits = c(0,100))
+
+covid_deaths_per_agegroup %>%
+  ggplot(aes(x=AGEGROUP, y=prop, fill=AGEGROUP)) +
+  geom_bar(stat="identity", color="white") +
+  theme_classic() +
+# remove background, grid, numeric labels 
+  theme(axis.line.x = element_blank(), axis.text.x = element_blank(), axis.ticks.x = element_blank(), axis.title.x = element_blank()) +
+  scale_fill_brewer(palette = "Set2")+
+  scale_y_continuous(expand = c(0,0))
+```
+
+### Proportion changes over time
+
+For proportion changes over time, we could make use of area plots. We will bin the data upfront per month to make the curve 'smoother'.
+
+```{r}
+covid_mortality_data %>%
+  filter(AGEGROUP =="85+" & REGION == "Flanders") %>%
+  drop_na(SEX) %>%
+  mutate(YEAR=year(DATE),MONTH = month(DATE))%>%
+  filter(YEAR==2021) %>%
+  group_by(MONTH, SEX) %>%
+  summarise(deaths = sum(DEATHS)) %>%
+  ggplot(aes(x=MONTH,y=deaths, fill=SEX))+
+  geom_area(position = "fill")+
+  theme_classic()+
+  scale_fill_manual(values = c("lightpink","lightblue"))
+```
+
+
+## X-Y relationships
+
+Many datasets consist of multiple quantitative variables, think about weight, height, lymphocyte counts, expression of a gene, ... To plot a relationship between two quantitative variables, a scatterplot is often used. We can even add another quantitative value encoded as size or a qualitative variable encoded as color (or shape).
+
+
+```{r}
+NB_data %>%
+  ggplot(aes(x=MYCN_expr,y=MYC_expr))+
+  geom_point()+
+  theme_classic()+
+  labs(x="normalised MYCN expression",y="normalised MYC expression")
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr,y=MYC_expr, color=MYCN_status))+
+  geom_point()+
+  theme_classic()+
+  labs(x="normalised MYCN expression",y="normalised MYC expression", color="MYCN status")
+
+NB_data %>%
+  mutate(age_in_y = age/365) %>%
+  ggplot(aes(x=MYCN_expr,y=MYC_expr, color=MYCN_status, size=age_in_y))+
+  geom_point()+
+  theme_classic()+
+  labs(x="normalised MYCN expression",y="normalised MYC expression", size="age (in years)", color="MYCN status")
+```
+
+### Multiple relationships
+
+For high dimensional data, you could use heatmaps as an reduced representation. Since we tackled heatmaps separately, I will not discuss them here, hence, now that this is also an option.
+
+For a more limited number of variables, scatter plot matrices or correlation plots are also a good option. Or you could split up your plots using small multiples.
+
+#### Multiple correlation plots
+
+```{r}
+library(GGally)
+
+covid_hospitalisations_data %>% select(-DATE, -PROVINCE) %>%
+ggpairs(title="correlogram with ggpairs()") +
+  theme_classic()
+
+covid_hospitalisations_data %>% select_if(is.numeric) %>%
+ggcorr(method = c("everything", "pearson")) 
+
+```
+
+
+#### The use of small multiples or facets
+
+A way that is often used to visualise high dimensional data are facets or small multiples. Its an elegant way to inspect complex data. For publication purpose, I recommend to extract the parts of the multiplets that are the most informative so it is easier to focus for the reader. The original plot can be added as a supplementary figure.
+
+```{r}
+NB_data %>%
+  ggplot(aes(x = MYCN_expr, y = MYC_expr, color = MYCN_status))+
+  geom_point() +
+  facet_wrap(~stage, ncol=2) +
+  theme_classic()+
+  labs(x="normalised MYCN expression",y="normalised MYC expression", color="MYCN status")
+```
+
+```{r}
+covid_mortality_data %>%
+  drop_na()%>%
+  group_by(AGEGROUP, SEX) %>%
+  summarise(sumDEATHS = sum(DEATHS)) %>%
+  ggplot(aes(x = AGEGROUP, y = sumDEATHS)) +
+  geom_col() +
+  facet_wrap(~SEX)+
+  theme_classic() +
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())+
+  scale_y_continuous(expand = c(0, 0)) +
+  scale_fill_brewer(palette = "Set2")+
+  labs(title = "The deaths over the age groups for both genders.", x = "gender", y = "percentage of deaths per age group")
+```
+
+## No connection is no line
+
+Only use line graphs when there is a connection between the dots, eg for paired data or time series. Do not connect data when there is no connection at all. Here you will see an example of a slope graph. This is a nice way of visualizing two values per group.
+
+```{r}
+covid_mortality_data %>%
+  drop_na()%>%
+  group_by(AGEGROUP, SEX) %>%
+  summarise(sumDEATHS = sum(DEATHS)) %>%
+  ggplot(aes(x=SEX, y = sumDEATHS,  group = AGEGROUP, color = AGEGROUP)) +
+  geom_point(size=3) +
+  geom_line() +
+  theme_classic() +
+  theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())+
+  scale_color_brewer(palette = "Set2")
+```
+
+
+
+# Uncertainty
+
+One important, but challenging, part of data visualization is to visualize uncertainty. Whether and how we choose to represent this uncertainty can make a major difference in how accurately our audience perceives the meaning of the data. Common approach are confidence intervals or error bands, but they require some knowledge to be interpreted and are not optimal for a lay public.
+
+As you saw in the theoretical course, there are multiple ways to indicate uncertainty. Read [this publication](https://www.nature.com/articles/nmeth.2659) about the use of these different options. 
+
+To summarise, there are three types of error bars:
+- standard deviation (s.d.)
+- standard error of the mean (s.e.m.)
+- confidence interval (CI)
+
+### Which metric of uncertainty to use?
+
+Remember the stripe chart we made before. We indicated some 'error bars' on top of it. In our example, the error bars were standard deviations. We will change them to the two other types and see which impact it has. We will keep the y-axis equal for all graphs to better see the difference. For the CI bars, we will play around with the confidence levels as well.
+
+```{r}
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_dotplot(binaxis='y', stackdir='center', cex=3)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set3")+
+  scale_color_brewer(palette = "Set3") +
+  stat_summary(fun.data=mean_sdl,geom="pointrange", color="darkgray")+
+  scale_y_continuous(limits = c(0,15))
+
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_dotplot(binaxis='y', stackdir='center', cex=3)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set3")+
+  scale_color_brewer(palette = "Set3")+
+  stat_summary(fun.data=mean_se, geom="pointrange", color="darkgray")+
+  scale_y_continuous(limits = c(0,15))
+
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_dotplot(binaxis='y', stackdir='center', cex=3)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set3")+
+  scale_color_brewer(palette = "Set3") +
+  stat_summary(fun.data=mean_cl_normal,geom="pointrange", color="darkgray")+
+  scale_y_continuous(limits = c(0,15))
+
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_dotplot(binaxis='y', stackdir='center', cex=3)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set3")+
+  scale_color_brewer(palette = "Set3") +
+  stat_summary(fun.data=mean_cl_normal,geom="pointrange", color="darkgray", fun.args=list(conf.int=.9))+
+  scale_y_continuous(limits = c(0,15))
+
+NB_data_subsample %>%
+  ggplot(aes(x=stage, y=MYCN_expr, color=stage, fill=stage))+
+  geom_dotplot(binaxis='y', stackdir='center', cex=3)+
+  theme_classic()+
+  theme(axis.ticks.x = element_blank(), axis.line.x = element_blank(), legend.position = "none")+
+  scale_fill_brewer(palette = "Set3")+
+  scale_color_brewer(palette = "Set3") +
+  stat_summary(fun.data=mean_cl_normal,geom="pointrange", color="darkgray", fun.args=list(conf.int=.99))+
+  scale_y_continuous(limits = c(0,15))
+```
+
+You notice that or error bars differs a lot, compared to the summary statistic we choose. Its thus important to indicate what you used (either in the graph itself or in your figure caption). What to use when?
+
+- s.d. error bars inform us about the spread of the population and are therefore useful as predictors of the range of new samples. They can also be used to draw attention to very large or small population spreads. The s.d. bars reflect the variation of the data and not the error in your measurement. 
+
+- s.e.m. reflect the uncertainty in the mean and its dependency on the sample size, n (s.e.m. = s.d./√n). Intuitively, s.e.m. bars shrink as we perform more measurements. Unfortunately, the commonly held view that “if the s.e.m. bars do not overlap, the difference between the values is statistically significant” is incorrect. 
+
+- CIs are a more intuitive measure of uncertainty and are popular in the medical literature. If they do not overlap, it means that the difference is significant. This is an interval estimate that indicates the reliability of a measurement.
+
+# Scales
+
+Think about the scales you are using.
+
+Avoid using discrete scales for continuous data. Sometimes, eg. for mice experiments, you see that researchers are using the days on the x axis as a discrete scale. In the case you had an intervention at day 3, day 10 and day 30, using a discrete scale would make the last time intervals looking shorter.
+
+```{r}
+mice_example <- tibble(days=c(0,3,10,30), values = c(10,100,300,1000))
+
+mice_example %>%
+  ggplot(aes(x=days, y=values))+
+  geom_point()+
+  geom_line()+
+  theme_classic()
+
+mice_example %>%
+  ggplot(aes(x=as.factor(days), y=values))+
+  geom_point()+
+  geom_line()+
+  theme_classic()
+```
+
+In some cases you need to transform your scales. The transformation that is performed the most is a logarithmic one. But which base do you use? The most common ones are base 2, e (the natural log) and base 10. In general, we do not recommend using the natural log for data exploration and visualization as the scale is not intuitive or easy to interpret. Choosing between base 2 and base 10 depends on how 'steep' your data is. You will use base 10, if you're dealing with larger values compared to base 2. We can either apply a transformation on the data/values or on the scale. We will demonstrate this on our mice dummy data.
+
+```{r}
+mice_example %>%
+  ggplot(aes(x=days, y=log2(values)))+
+  geom_point()+
+  geom_line()+
+  theme_classic()
+
+mice_example %>%
+  ggplot(aes(x=days, y=values))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  scale_y_continuous(trans = "log2")  
+
+mice_example %>%
+  ggplot(aes(x=days, y=log10(values)))+
+  geom_point()+
+  geom_line()+
+  theme_classic()
+
+mice_example %>%
+  ggplot(aes(x=days, y=values))+
+  geom_point()+
+  geom_line()+
+  theme_classic()+
+  scale_y_continuous(trans = "log10")  
+```
+
+

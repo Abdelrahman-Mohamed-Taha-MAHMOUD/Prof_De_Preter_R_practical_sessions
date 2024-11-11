@@ -1,0 +1,449 @@
+---
+title: "Differential Expression - exercise LEVEL 2"
+author: "Celine Everaert & Katleen De Preter"
+date: "13/11/2023"
+output: 
+  html_document:
+    theme: paper
+    highlight: tango
+    code_folding: show
+    toc: true
+    number_sections: true
+    toc_float: true
+    toc_depth: 3
+---
+
+# Data preprocessing and exploration 
+
+## Differential Expression between YAP1-mutant versus control transduced cell lines
+
+The BRAFV600E mutant melanoma cell lines A375 and SKMEL28 were transduced with a lentiviral vector expressing a constitutively active mutant of YAP1 (YAP5SA) to induce YAP1 activity.
+In this notebook, we will perform a differential expression (DE) analysis between transduced cell lines versus non-transduced cell lines. So, we will identify the genes that have a higher or lower expression upon YAP1 lentiviral tranduction. This analysis will be performed with DESeq2. Limma Voom is an alternative method, amongst others. After DE analysis, we will see which genesets are up- or downregulated.
+You can look up the study from which we are using the data by searching for the GSE193775 dataset in Gene Expression Omnibus and the paper via PubMed (PMID: 35798875).
+
+## Seting up the packages
+
+To start, we need to install (and load) some CRAN and Bioconductor packages. You only need to do this once, that is why I commented the installation lines out. If packages are properly installed, you can just load the libraries. These are the packages you need for the differential expression analysis.
+
+```{r setup, include=FALSE}
+#### Load libraries
+if (!requireNamespace("BiocManager", quietly = TRUE))
+  install.packages("BiocManager")
+
+## DESeq2 for differential expression analysis
+#BiocManager::install("DESeq2")
+library("DESeq2")
+
+## Heatmaps for visualization purposes
+#BiocManager::install("pheatmap")
+library("pheatmap")
+
+## BiocManager::install("ComplexHeatmap")
+library("ComplexHeatmap")
+
+## Packages that could be used for nice color themes
+#install.packages("RColorBrewer")
+library("RColorBrewer")
+
+## Tidyverse will be used to shape the data
+#install.packages("tidyverse")
+library("tidyverse")
+
+## VSN is used for transformation purposes
+#BiocManager::install("vsn")
+library("vsn")
+
+## Easy to use package to make good looking Volcano plots
+#BiocManager::install("EnhancedVolcano")
+library("EnhancedVolcano")
+
+## For gene set enrichment analysis
+#BiocManager::install("msigdbr")
+library("msigdbr")
+
+#BiocManager::install("clusterProfiler")
+library(clusterProfiler)
+
+#BiocManager::install("fgsea")
+library(fgsea)
+
+```
+
+Some general tips and tricks:
+- use meaningful names (eg. counttable, annotationtable and not x, y), this will prevent mix ups when you are performing more complex analysis
+- check your dataframes/matrixes before you run the whole script (either use view or click on the dataframe/matrix in your 'environment'). Are these looking like you expect? Do you have rownames/columnnames where you need them?
+
+## Reading in the Counts data
+
+Our count data is saved as a tab separated file. We need to use a read function that uses tabs as a separator.
+We need to generate a data frame that has the samples as column names and genes as rownames.
+Inspect the RNAseq_data with the function view.
+
+```{r}
+### Import data and make CountTable
+readr::local_edition(1) # this is a line that I need to run to avoid an error on vroom on my mac
+RNAseq_data <- read_tsv("GSE193775_Readcounts.txt") %>% column_to_rownames("Gene")
+```
+
+## Reading in the sample information
+
+Read in the sample information file as tibble and then transform to a dataframe with the "treatment" (Control vs YAP1mut) information in the first column.
+
+```{r}
+AnnotationTable <- read_tsv("GSE193775_sampleinfo.txt") %>% column_to_rownames("SampleID")
+```
+
+## Making a DDS object for DESeq analysis
+
+DESeq needs a dds object to perform its calculations on. We will create this by using our count table, annotation table and we will feed a 'design'.
+This design tells to DESeq what sample groups you want to compare (in our case we compare Control versus YAP1mut). This command give a warning message telling you that characters are converted to factors, you can ignore this message.
+
+```{r}
+### Make a dds object, including the design of the DE experiment
+dds <- DESeqDataSetFromMatrix(countData = RNAseq_data,
+                              colData = AnnotationTable,
+                              design = ~treatment)
+
+```
+
+## Filter data
+
+Filter data to give your test more power. In this case, we will only keep the genes with more than 20 counts when we sum the counts over all samples. Do the filtering and check how many genes you keep.
+
+```{r}
+### Prefilter the data
+keep <- rowSums(counts(dds)) >= 10
+dds <- dds[keep,]
+```
+
+## Data normalization and log-transformation
+
+Using the function estimateSizeFactors you can normalize the raw RNA-seq counts using the median ratio method. After that, we log transform the normalized count data. 
+
+```{r}
+normdata <- estimateSizeFactors(dds)
+
+### with the function sizeFactors you can calculate the normalization factor used to normalize the raw counts and get normalized counts.
+
+sizeFactors(normdata)
+
+### Here we transform the normalized counts with 2log. As (normalized) counts can be zero, we first add 1, so that for all normalized counts a log-transformation can be performed (as log2(0)=-Inf). An alternative is to use rlog (regularized log).
+
+normalized_counts <- log2(counts(normdata, normalized=TRUE)+1)
+```
+
+
+## Data exploration with PCA
+In the next step we perform principal component analysis to visualize the similarity and difference of the different samples. 
+
+```{r}
+### prcomp is the function used to calculate the prinicple components (scale = TRUE is to perform PCA on standardized data). By performing prcomp on the transposed data, principle componennt analysis is performed at the sample level (instead of at the genelevel). pca$x is a matrix and data need to be converted to a tibble or dataframe for ggplot analysis. The samples are coulored according to their treatment (Control or YAP1mut).
+
+pca=prcomp(t(normalized_counts), scale=TRUE)
+pca$x %>% as.data.frame() %>%
+  		ggplot(aes(x=PC1,y=PC2,color=AnnotationTable$treatment)) +
+  		geom_point()
+
+```
+
+## Data exploration with heatmap
+
+Similar as for PCA we perform hierarchical clustering and heatmap visualization to explore the similarities between the samples. Write the script for the second option using "euclidean" distance and "ward.D2" clustering.
+
+```{r}
+### We first select only the data from the top 1000 genes (heatmap visualization on all genes will be too computer intensive)
+select_normalized_counts <- as.data.frame(normalized_counts) %>%
+  		sample_n(1000) 
+
+colors_treatmenttype <- c("#8DD3C7", "#FFFFB3")
+names(colors_treatmenttype) <- c("Control","YAP1mut")
+column_ha = HeatmapAnnotation(treatmenttype = as.factor(AnnotationTable$treatment), col = list(treatmenttype=colors_treatmenttype))
+
+## First option: just a heatmap without hierarchical clustering (check all arguments in this function). Data are first standardized using the scale function. 
+dataforheatmap=t(scale(t(as.matrix(select_normalized_counts))))
+Heatmap(dataforheatmap,   
+        show_row_names = FALSE, show_column_names = TRUE,
+        cluster_rows = FALSE, cluster_columns = FALSE,
+        row_title = "normalised gene expression", column_title = "cell line",
+        show_row_dend = FALSE,
+        show_column_dend = FALSE,
+        top_annotation = column_ha)
+
+## Second option: a heatmap including hierarchical clustering visualised with a dendrogram (distance = Manhattan and clustering method = ward.D2)
+Heatmap(dataforheatmap,   
+        show_row_names = FALSE, show_column_names = TRUE,
+        cluster_rows = TRUE, cluster_columns = TRUE,
+        clustering_distance_rows = "euclidean", clustering_method_rows = "ward.D2",
+        clustering_distance_columns = "euclidean", clustering_method_columns = "ward.D2",
+        row_title = "normalised gene expression", column_title = "cell line",
+        show_row_dend = TRUE,
+        show_column_dend = TRUE,
+        top_annotation = column_ha)
+```
+
+# DE analysis
+
+## DEseq analysis
+
+If you use the DESeq comment on the counts you will perform normalization and differential expression analysis in one go. The different steps done by DESeq will pop up in your console. Size factors and dispersion are estimated for normalization purposes. Afterwards the model/design is fit and all genes are tested for differential expression. In this case, the design is very simple (comparing Control vs YAP1mut), but you can make much more complex designs (not part of this course), e.g. in this example we could have taken into account the cell_line info (however this requires a bit more complex design which we will therefore not show in this practical session).
+
+```{r}
+### Differential expression analysis
+dds <- DESeq(dds)
+```
+
+## Inspecting DESeq results
+
+With the results function we can extract a table with Fold changes, P-values, ... from the dds object. Standard, a cut-off of 0.1 is used, but we can be stricter if we want by changing some of the parameters. Use padj < 0.01 and log2(fold-change) of more than 1 to select differentially expressed genes.
+
+```{r}
+### Retrieve results (with standard settings, i.e. alpha=0.1)
+res <- results(dds)
+summary(res)
+
+?results()
+
+## here we select the genes with a padj value lower than 0.01 and a log2foldchange of more than 1
+res <- results(dds, alpha=0.01, lfcThreshold = 1)
+summary(res)
+
+## here we sort the resultstable based on the adjusted p-value (from small to large), you can compare the objects res and resOrdered
+resOrdered <- res[order(res$padj),]
+resOrdered
+```
+
+## Make a heatmap and perform hierarchical clustering, however now only including the differentially expressed genes
+
+
+```{r}
+### We first select only the data from the top 50 differentially expressed genes (compare the heatmap and clustering using the random selection of 50 genes (see higher))
+select_normalized_counts <- normalized_counts[rownames(resOrdered)[1:50],] 
+
+colors_treatmenttype <- c("#8DD3C7", "#FFFFB3")
+names(colors_treatmenttype) <- c("Control","YAP1mut")
+column_ha = HeatmapAnnotation(treatmenttype = as.factor(AnnotationTable$treatment), col = list(treatmenttype=colors_treatmenttype))
+
+## A heatmap with hierarchical clustering including dendrogram (distance = Manhattan and clustering method = ward.D2)
+dataforheatmap=t(scale(t(as.matrix(select_normalized_counts))))
+Heatmap(dataforheatmap,   
+        show_row_names = FALSE, show_column_names = TRUE,
+        cluster_rows = TRUE, cluster_columns = TRUE,
+        clustering_distance_rows = "manhattan", clustering_method_rows = "ward.D2",
+        clustering_distance_columns = "manhattan", clustering_method_columns = "ward.D2",
+        row_title = "normalised gene expression", column_title = "cell line",
+        show_row_dend = TRUE,
+        show_column_dend = TRUE,
+        top_annotation = column_ha)
+```
+
+
+## Inspect the data via MA-plot
+
+With this code, we will visualise the M (log ratio) - A (mean average) plot. The MA plot gives an idea about the variance related to the gene level/gene expression abundance. You expect to see a lower log fold changes for the higher expressed genes. Genes that are not differentially expressed are around the M-value = 0 (Y-axis). Indeed, no differential expression is fold-change=1 or log(fold-change)=0. The differentially expressed genes with adjusted p-value < alpha are indicated in blue.
+
+
+```{r}
+plotMA(res,ylim=c(-25,28),alpha=0.05)
+```
+
+## Plot the expression of the most differential gene
+
+Plot the expression of the 3 genes with the lowest p-adjusted value. What is the gene name (gene symbol) of the most differentially expressed gene?
+
+```{r}
+plotCounts(dds, gene=which.min(res$padj), intgroup="treatment")
+
+## alternative: top most differentia expressed gene
+plotCounts(dds, gene=rownames(resOrdered[1,]), intgroup="treatment")
+
+## second most differential
+plotCounts(dds, gene=rownames(resOrdered[2,]), intgroup="treatment")
+
+## third most differential
+plotCounts(dds, gene=rownames(resOrdered[3,]), intgroup="treatment")
+
+
+```
+
+
+## Visualise differential expression results using a volcano plot
+
+A volcano plot gives an idea about the number of genes that are differential in your dataset. If you do want you can also indicate the gene names. Try to play around with the code. Can you adapt the colors?
+
+```{r}
+### the ggplot solution
+as.data.frame(res) %>%
+  ggplot(aes(x=log2FoldChange,y=-log10(padj))) +
+  geom_point()
+
+### the enhanced volcanoplot solution
+EnhancedVolcano(res,
+    lab = rownames(res),
+    x = 'log2FoldChange',
+    y = 'pvalue')
+```
+
+
+
+# Gene set enrichment analysis (GSEA) (OPTIONAL PART, NO EXERCISES IN THIS SECTION)
+
+Gene set enrichment analysis (GSEA) is a way to make sense out of the identified expression level differences between the tested sample groups. 
+
+GSEA compares expression in two biological states and determines if gene sets show significant, concordant change. GSEA determines if genes in a set generally increase or decrease in expression. 
+
+* GSEA uses data from all genes and not only the significantly differentially expressed.
+
+* GSEA uses numeric fold change values. Thus, GSEA can identify pathways where lots of small changes not significant at the gene level add up to a significant change at the gene set level. 
+
+* GSEA compares only two states. .
+
+## Gene sets
+
+What is a gene set? Two or more genes with similar function, structure, localization, or any other defining similarity.
+
+Gene sets can be as general, e.g. cytosolic or mitochondrial, or highly specific as "up-regulated in blood vessel cells in response to wound in *Roy et al 2007*". They can be defined by an individual research study (like the latter, often retrieved in a publication by differential expression analysis of specific processes), others are generally agreed upon knowledge formed from an entire body of literature (like the former). They also vary in the number of genes (2 to thousands), are not exclusive (one gene is in many gene sets), and many are redundant (transmembrane, membrane, lipid bilayer,...). Some are constructed by manual curating (literature review), while others are defined computationally (eg. transcription factor targets by binding site identification).
+
+It is up to you, the researcher, to select what group of gene sets you want to test. Is definitely not "the more the better", given the need for multiple testing correction. Carefully select the relevant gene sets you want to test this will decrease the correction you have to do for multiple testing.
+
+### Broad MSigDB gene sets
+
+The Broad Institute has collated many useful gene sets in their Molecular Signatures Database ([MSigDB](https://www.gsea-msigdb.org/gsea/msigdb/collections.jsp)). 
+Check this website. Can you find the Hallmark genesets?
+
+Hallmark is the most general group and is usually where we start our analyses. It helps reduce the complexity of a large gene list down to easily understood terms. It also provides some context when looking at more specific gene sets as you can often group the other sets under a more general Hallmark term. However, because Hallmark is the most general, it is also the most incomplete with 50 gene sets representing just under 4400 genes.
+
+Curated and gene ontology sets are more specific than Hallmark, though they contain sets with a range of specificities. They are particularly useful in adding details to a Hallmark term or defining testable hypotheses for follow-up experiments in the lab. They contain a lot more genes than Hallmark but many sets are redundant or overlapping. If there are many significant Hallmark terms, we often do not run these more specific sets as it gives too many results for interpretation. In contrast, when there are few significant Hallmark terms, these more granular gene sets may provide better insight.
+
+There are several other sets in MSigDB. Some of these are too specific (individual studies) to be of use in your analyses (C2 chemical and genetic perturbations or C7 immunologic signatures) while others cover areas not relevant to the experimental design (C1 chromosome position, C3 gene regulation, C4/C6 cancer-oriented). 
+
+## Get gene set data
+
+We will access MSigDB from within R using the package `msigdbr`. It is important to update this package frequently as Broad continues to improve its gene set collections. 
+First, we extract the lists of genes in Broad Hallmark terms from the package `msigdbr`. We format it as a data frame so we can use the `tidyverse`.
+
+```{r}
+### Hallmark
+H <- as.data.frame(msigdbr(species = "Homo sapiens", 
+                           category = "H"))
+```
+
+However, `fgsea` needs the database as a list, not as a data frame. There are many ways we can accomplish this. Here is one using the `tidyverse`. Remember to select the gene ID column that matches your fold change data!
+
+```{r}
+H.ensembl.ls <- H %>% 
+  #Keep gene ID that match expression data gene ID
+  select(gs_name, ensembl_gene) %>% 
+  #Collapse all genes in each gene set into 1 row each
+  group_by(gs_name) %>%
+  summarise(all.genes = list(unique(ensembl_gene))) %>%
+  #Convert to list
+  deframe()
+```
+
+## Calculate fold change
+
+GSEA orders the genes based on the mean gene expression fold change between the two groups that are compared. Thus, we retrieve it from the DE results in 'res'. 
+
+`fgsea` requires a vector with decreasing fold changes (or list of vectors if you have multiple groups). 
+
+```{r}
+results_df <- as.data.frame(res) %>% 
+  #Move gene IDs from rownames to a column
+  rownames_to_column("ensembl_gene_id")
+results_df_fcordered <- results_df %>% arrange(-log2FoldChange)
+#Vector of mean fold change values
+FC.vec <- results_df_fcordered$log2FoldChange
+#Add gene annotation/names
+#Importantly, since both columns come from the same data frame,
+#we are confident that they are in the same order
+names(FC.vec) <- results_df_fcordered$ensembl_gene_id
+```
+
+
+## Run GSEA
+
+Using our formatted data, we run GSEA. We also set the number of permutations to run with `nperm`, which determines how many times the algorithm is run to estimate p-values.
+
+```{r}
+gsea.H <- as.data.frame(fgseaSimple(pathways = H.ensembl.ls, 
+                                    stats = FC.vec,
+                                    nperm = 4000,
+                                    scoreType = "std"))
+```
+
+You'll sometimes see a warning message about ties in the data, as seen above. This means some genes have the exact same fold change value. This can occur for several reasons including 1) rounding, 2) genes with multiple IDs in a database, and 3) true results where genes have the same fold change. It is not something to worry about as long as the percentage is low. Here, we have 0.43%. If the percentage is high, check that your data are correct with 1 mean fold change value per gene.
+
+You may also see a warning like
+
+```
+There were X pathways for which P-values were not calculated properly due to unbalanced gene-level statistic values
+```
+
+This occurs when `nperm` is not large enough to accurately estimate very small p-values (like those zeros in the gene linear model results!) If you see this error, try increasing `nperm` by orders of 10. Keep in mind that more permutations  increase the time it takes to run GSEA. You may reach a point where it's no longer worth it and should just fill in these NA with zeroes.
+
+## Extract GSEA results
+
+GSEA outputs a data frame of results.
+
+```{r}
+class(gsea.H)
+```
+
+This includes
+
+```{r}
+colnames(gsea.H)
+```
+
+* pathway: Unique name for gene set
+* pval: Significance
+* padj: FDR adjusted significance
+* ES: Enrichment score (same as Broad's online GSEA program)
+* NES: Enrichment score normalized to mean enrichment of random samples of the same size
+* nMoreExtreme: Number of times a random gene set had a more extreme enrichment score value
+* size: Total genes in gene set also found in fold change data
+* leadingEdge: Leading edge genes that drive the enrichment, 
+
+## Visualize significant GSEA
+
+The most common visualization for GSEA is the enrichment or `normalized enrichment score`. Let's plot `NES` for the subset of significant GSEA at FDR < 0.05. This is actually pretty strict for GSEA and people often go up to FDR < 0.2. Note that even with the more strict FDR, not every result makes sense, eg. the effect on the estrogen pathway as we are dealing with males.
+
+```{r fig.height=5, fig.width=6.5}
+gsea.H %>% 
+  filter(padj <= 0.05) %>% 
+  
+ggplot(aes(x=reorder(pathway, NES), #Reorder gene sets by NES values
+           y=NES)) +
+  geom_col() +
+  theme_classic() +
+  #Force equal max min
+  #Some more customization to pretty it up
+  #Flip x and y so long labels can be read
+  coord_flip() +
+  #fix labels
+  labs(y="Normalized enrichment score (NES)",
+       x="Gene set",
+       title = "Hallmark GSEA (FDR < 0.05)\nUp in control <--         --> Up in YAP1mut")
+```
+
+We could also use visualisations implemented in the fgsea package itself. Here we select the top and bottom genesets based on NES value (ignoring padj values).
+
+```{r}
+topPathwaysUp <- gsea.H %>% arrange(NES) %>% top_n(10, NES) %>% select(pathway)
+topPathwaysDown <- gsea.H %>% arrange(-NES) %>% top_n(10, -NES) %>% select(pathway)
+topPathways <- c(topPathwaysUp$pathway, topPathwaysDown$pathway)
+plotGseaTable(H.ensembl.ls[topPathways], FC.vec, gsea.H, render=TRUE)
+```
+
+We could also visualise the results of an individual gene set.
+
+```{r}
+plotEnrichment(H.ensembl.ls[["HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION"]],
+               FC.vec) + labs(title="HALLMARK_EPITHELIAL_MESENCHYMAL_TRANSITION")
+plotEnrichment(H.ensembl.ls[["HALLMARK_ANGIOGENESIS"]],
+               FC.vec) + labs(title="HALLMARK_ANGIOGENESIS")
+```
+
+
+
+

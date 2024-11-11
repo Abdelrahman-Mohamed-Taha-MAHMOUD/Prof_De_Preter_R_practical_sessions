@@ -1,0 +1,456 @@
+---
+title: "Statistics on biomedical data"
+author: "Katleen De Preter & Celine Everaert"
+date: "10/23/2023"
+output: 
+  html_document:
+    theme: paper
+    highlight: tango
+    code_folding: show
+    toc: true
+    number_sections: true
+    toc_float: true
+    toc_depth: 3
+---
+
+# Introduction
+
+Welcome in the practical session on the use of R for statistical analysis. 
+
+In this R lesson, you will learn to apply and interpret some statistical tests.
+
+Before starting, I would like to refresh some important remarks on programming.
+
+1) If you don't know how to use a specific function, read the help files of the function and try the example code found in last paragraph of the help information. You can call these files by using *?namefunction* or *help(namefunction)*.
+
+2) When a script is not working, read the error messages! Often it explains itself. Mostly warning messages can be ignored. 
+
+3) Don't be afraid to Google your questions or error messages!
+
+4) Analyse the question before you start to program. Split a complex problem in different parts. Try to answer the following questions:  What is the hypothesis? Which test do you need to use? Which data is needed to perform this test? Do you have this data or how do you get the data you need? What is the answer on the question?
+
+5) Dare to change scripts/commands and look what the effect is! Play with R! Don't be afraid, in the worst case you need to restart RStudio. Your computer will definitly not explode!
+
+6) Be aware that there are different scripting options for the same question.
+
+Enjoy!
+
+## Load the package tidyverse
+
+```{r}
+library(tidyverse)
+```
+
+## A dataset for the exercises of today
+
+In this lesson you will (re)analyse expression data of a published study (Vermeulen et al., Lancet Oncology, 2009) (http://www.thelancet.com/journals/lanonc/article/PIIS1470-2045(09)70154-8/fulltext). We used this data before to make heatmaps. In this study we selected 59 genes with prognostic potential in neuroblastoma cases, i.e. the expression of these genes is correlated with survival outcome of neuroblastoma patients. The expression of these genes was measured using quantitative PCR in 364 neuroblastoma tumors for which we have clinical data. 
+The file named qPCR_expression_data.tsv contains qPCR expression data of 59 genes in 364 neuroblastoma tumors. The second file named qPCR_sample_data.tsv contains some clinical data of the 364 samples:
+
+    MNA = presence of amplification of oncogene MYCN (0=not present, 1=MYCN-amp present),
+
+    Stage = tumor stage (1, 2, 3, 4 or 5=4S), 
+
+    event = have an event or not (0=no, 1=yes), 
+
+    survival = did the patient die of disease or not (0=no, 1=yes), 
+
+    EFS = event free survival time (time from diagnosis until event or follow-up) ("EFS" linked to "event"), 
+
+    OS = overall survival time (time from diagnosis til dead or follow-up) ("OS" linked to "survival"). 
+
+Save the 2 tsv files from Ufora into your working directory first. Then you can check which files are in your working directory and whether these 2 new files are also present!
+
+```{r}
+dir()
+```
+
+During the previous lessons you have learned how to read data from a tsv file into your R-environment. 
+Use the appropriate readR function (*read_tsv()*, *read_csv()*, ...). Do you need to change some of the datatypes, eg to factors? You might used the base way *read.table()*, but than you need to tweak more parameters.
+
+```{r}
+# Read the expression data from the TSV file
+expression_data <- read_tsv("qPCR_expression_data.tsv")
+
+# Read the sample data from the TSV file and specify data types
+sample_data <- read_tsv("qPCR_sample_data.tsv", col_types = cols(
+  MNA = col_factor(levels = c("0", "1")),
+  Stage = col_factor(levels = c("1", "2", "3", "4", "5", "4S")),
+  event = col_factor(levels = c("0", "1")),
+  survival = col_factor(levels = c("0", "1"))
+))
+
+# Check the structure of the data frames
+str(expression_data)
+str(sample_data)
+
+```
+
+Hopefully, you didn't forget to assign the imported data to an object with a self chosen name? If not, you have only printed the imported data in your console. It is important that you import and store the data as an object, so that you can use it in R. Choose a good name, for example expression_data and sample_data, ...
+
+Now apply the head and tail function to your imported data. You will see that the top and last 6 lines of your data are printed in the console. In this way you can check whether your data are imported correctly, and you can see how the data look like.
+
+```{r}
+# expression data
+head(expression_data)
+tail(expression_data)
+
+# sample data
+head(sample_data)
+tail(sample_data)
+```
+
+**VERY IMPORTANT!!!** Sometimes, it is more logical to work with the expression data as matrix, since these are all numerical values. Therefore you can convert the expression_data data.frame/tibble to a matrix with the as.matrix function. Save this in another object.
+As demonstrated in the last practical session, you can check the converted object with *class()*.
+Remark that row and column names might disappear and/or the data type might be incorrect (eg. strings instead of numbers).
+
+```{r}
+# Check the class of the original data frame/tibble
+class(expression_data)
+
+# Convert expression_data to a matrix
+expression_data_matrix <- as.matrix(expression_data)
+
+# Check the class of the converted matrix
+class(expression_data_matrix)
+
+# Display the first few rows of the matrix
+head(expression_data_matrix)
+```
+
+Now look again which objects are saved in the R-environment. Do you remember the *ls()* function? 
+
+```{r}
+ls()
+```
+
+In some cases it might be more interesting to have the expression data transposed (genes as columns, instead of patients). You can perform this with the following code:
+
+```{r}
+expression_data_pergene <- expression_data %>%
+    pivot_longer(-genename) %>%
+    pivot_wider(names_from = "genename", values_from="value") 
+expression_data_pergene
+```
+
+
+
+# Basic statistics with R
+
+Most basic statistical tests are part of the library(stats) (this library is automatically loaded when you open R!!!)
+
+    1) t-test: t.test() (parametric) / Mann-Whitney  = Wilcoxon test: wilcox.test() (non-parametric)
+
+    2) analysis of variance: anova() (parametric) / kruskal.test() (non-parametric)
+
+    3) Chi-square test: chisq.test() / Fisher exact test: fisher.test()
+
+    4) correlation analysis : cor(method=“spearman”/”pearson") and correlation test: cor.test()
+    
+    5) etc
+
+Above you can see some functions for basic statistics. If you need to apply it in an exercise: first go to the help file. Maybe it can be helpful to try the example in the help file. Then define all arguments you need: 1) some are needed: check in what format you need them: a vector/a data-frame/a function/..., 2) some are not needed and have a default value: check if the default setting is ok for your question! Then generate the needed arguments and use them in the function.
+
+Don't forget to learn how to interpret the result of a test!
+
+## Parametric T-test and non-parametric Wilcoxon test
+
+With these tests you will compare the means of 2 groups. H0: the means of both groups are equal.
+
+
+### t-test on 2 vectors
+
+Is there a significant difference in the length of patients from group 1 versus group 2?
+
+Length of group 1: 187, 177, 198, 176, 199
+
+Length of group 2: 167, 176, 156, 166, 168
+
+
+```{r}
+group1 <- c(187, 177, 198, 176, 199)
+group2 <- c(167, 176, 156, 166, 168)
+t.test(group1,group2)
+```
+
+From this example, you can see that the difference in mean length of patients in group 1 and group 2 is significantly different with p=0.009743 < 0.05.
+As an example I have used the classical t-test (parametric), however with this small sample size 5 vs 5 it might be more logical to do a non-parametric test. Can you test with a non-parametric test?
+
+```{r}
+wilcox.test(group1, group2)
+```
+
+CONCLUSION: The difference in length is also significant according to the non-parametric test. Ignore the warning message!
+
+It might be interesting to stock results in an object to later obtain the p-value or other test statistics.
+
+```{r}
+# Perform the Wilcoxon test and store the result in an object
+result_wilc <- wilcox.test(group1, group2)
+
+# Print the full result
+result_wilc
+
+# Access and print the p-value
+result_wilc$p.value
+```
+
+
+### t-test using a formula
+
+The data can also come in another way. Where you have one vector (or column in a tibble) with the measurement and one with the group labels.
+
+Is there a significant difference in the length of patients from group 1 versus group 2?
+
+Length of patients: 187, 177, 198, 176, 199, 167, 176, 156, 166, 168
+
+Group: 1, 1, 1, 1, 1, 2, 2, 2, 2, 2
+
+In this situation you have all lengths in one vector and in addition you have a grouping vector (sometimes this is a factor with 2 levels). In that case you should work with a formula (can be recognized by the ~: before the ~ you find the dependent variable and after the ~ comes the independent variable).
+
+```{r}
+# Create the vectors for length and group
+length <- c(187, 177, 198, 176, 199, 167, 176, 156, 166, 168)
+group <- c(1, 1, 1, 1, 1, 2, 2, 2, 2, 2)
+
+# Perform the parametric t-test using a formula
+t.test(length ~ group)
+
+# Perform the non-parametric Wilcoxon test using a formula
+wilcox.test(length ~ group)
+```
+
+These data can be visualised in a boxplot (not ideal with 5 x 2 datapoints but below you can find the script):
+
+```{r}
+# this is the base-R way to draw a boxplot
+boxplot(length~group) 
+
+#also with ggplot you can make nice boxplots
+library(ggplot2)
+
+inputdata <- tibble(length, group = as.factor(group))
+
+inputdata %>%
+    ggplot(aes(x = group, y = length)) +
+    geom_boxplot() +
+    theme_classic()
+
+#boxplot with jitter
+inputdata <- tibble(length, group = as.factor(group))
+
+inputdata %>%
+    ggplot(aes(x = group, y = length)) +
+    geom_boxplot() +
+    theme_classic() +
+    geom_jitter()
+
+```
+
+
+CONCLUSION: As you can see you get exactly the same result. Depending on the format of your data, you chose for one of the 2 approaches.
+
+
+### paired t-test
+
+Above examples take into account that the observations are not paired. Go back to situation A (or B) and do a paired analysis. You will perform this type of analysis if for example vector 1 contains the length of 5 children measured in November 2016 while vector 2 contains the lengths **of the same children** (making it paired observations!) measured in November 2014. You can calculate whether these people have significantly grown.
+
+```{r}
+#Paired t-test (parametric):
+t.test(group1, group2, paired=T) # parametric test
+#Paired Wilcoxon test (non-parametric):
+wilcox.test(group1, group2, paired=T) # non-parametric test
+```
+
+CONCLUSION: The persons have significantly grown (p-value < 0.05) in 2 years time (based on a classical t-test), however when we apply a non-parametric Mann-Whitney/Wilcoxon test, the difference is not significant anymore (p > 0.05). 
+
+
+### exercises on the imported data
+
+#### exercise 1
+Is the mean expression of gene39 (MYCN) and gene46 (ODC1) significantly different in the different samples. Sometimes it can be helpful to see the distribution of the genes: can you plot this distribution (make a density plot using geom_density, maybe you can google or ask chatGPT)? Which test would you perform to statistically test the difference in means? Is a non-parametric alternative better? Do you need to approach this in a paired or unpaired way? 
+
+
+```{r}
+library(dplyr)
+
+# Assuming expression_data_pergene is your data frame
+#expression_data_pergene <- expression_data_pergene %>%
+  #rownames_to_column(var = "GeneName")
+
+# Now the "GeneName" column will be the index, and you can access data using gene names
+
+library(ggplot2)
+
+ggplot(expression_data_pergene, aes(x = gene39)) +
+  geom_density() +
+  labs(title = "Density Plot for Gene39 Expression")
+
+ggplot(expression_data_pergene, aes(x = gene46)) +
+  geom_density() +
+  labs(title = "Density Plot for Gene46 Expression")
+
+# Perform an independent samples t-test
+t_test_result <- t.test(expression_data_pergene$gene39, expression_data_pergene$gene46,  paired=T)
+
+# Print the t-test result
+t_test_result
+
+# Perform the Mann-Whitney test
+result <- wilcox.test(
+  x = expression_data_pergene$gene39,
+  y = expression_data_pergene$gene46,
+paired=T)
+
+# Display the test result
+result
+```
+
+CONCLUSION: According to both the t-test and the non-parametric Mann-Whitney (Wilcoxon) test their is no significant difference in gene39 versus gene46 expression. 
+
+#### exercise 2
+Is the expression of gene 14 (CD44) significantly different in samples with MYCN amplification compared to samples without MYCN amplification? Test this also for gene39 (MYCN) and gene 45 (NTKR1). Use a simple t-test as well as a Mann-Whitney test. (In this exercise you will have to use a formula as input with a grouping vector ...). Use the boxplot function to visualize the expression of gene 14 in samples with versus without MYCN amplification (in the helpfile of boxplot you can read that you can also use a formula as input).
+
+OPTIONAL STEP: For this exercise, it might be easy if expression data (where you can find gene14, gene39 and gene45 expression) and the sample data (where you can find MYCN amplification status) are together in one tibble. You can obtain this using the function left_join. This makes sure that the patient order is the same for all variables you're gonna use in your statistical test. Check this table using the head-function.
+```{r}
+# Assuming expression_data_pergene is your gene expression data frame, and sample_data is your sample data frame
+library(dplyr)
+
+# Assuming "name" in expression_data_pergene and "patientID" in sample_data are the common columns
+combined_data <- left_join(expression_data_pergene, sample_data, by = c("name" = "patientID"))
+
+
+
+
+# Check the first few rows of the combined data
+head(combined_data)
+
+```
+
+
+```{r}
+# Perform t-test for gene 14 (CD44)
+t_test_cd44 <- t.test(gene14 ~ MNA, data = combined_data)
+
+# Perform Mann-Whitney test for gene 14 (CD44)
+wilcox_cd44 <- wilcox.test(gene14 ~ MNA, data = combined_data)
+
+# Print the results
+t_test_cd44
+wilcox_cd44
+
+# You can repeat the same steps for gene39 (MYCN) and gene45 (NTKR1)
+
+# Perform t-test and Mann-Whitney test for gene 39 (MYCN)
+t_test_mycn <- t.test(gene39 ~ MNA, data = combined_data)
+wilcox_mycn <- wilcox.test(gene39 ~ MNA, data = combined_data)
+
+# Print the results for gene 39
+t_test_mycn
+wilcox_mycn
+
+# Perform t-test and Mann-Whitney test for gene 45 (NTKR1)
+t_test_ntkr1 <- t.test(gene45 ~ MNA, data = combined_data)
+wilcox_ntkr1 <- wilcox.test(gene45 ~ MNA, data = combined_data)
+
+# Print the results for gene 45
+t_test_ntkr1
+wilcox_ntkr1
+
+
+```
+
+```{r}
+# Create a boxplot to visualize gene 14 (CD44) expression by MNA status
+boxplot(gene14 ~ MNA, data = combined_data, main = "CD44 Expression by MYCN Amplification", xlab = "MYCN Amplification (0 = No, 1 = Yes)", ylab = "CD44 Expression")
+```
+
+Perform the statistical tests and make the boxplots.
+
+```{r}
+# Perform t-test and Mann-Whitney test for gene 14 (CD44)
+t_test_cd44 <- t.test(gene14 ~ MNA, data = combined_data)
+wilcox_cd44 <- wilcox.test(gene14 ~ MNA, data = combined_data)
+
+# Print the results for gene 14 (CD44)
+t_test_cd44
+wilcox_cd44
+
+# Perform t-test and Mann-Whitney test for gene 39 (MYCN)
+t_test_mycn <- t.test(gene39 ~ MNA, data = combined_data)
+wilcox_mycn <- wilcox.test(gene39 ~ MNA, data = combined_data)
+
+# Print the results for gene 39 (MYCN)
+t_test_mycn
+wilcox_mycn
+
+# Perform t-test and Mann-Whitney test for gene 45 (NTKR1)
+t_test_ntkr1 <- t.test(gene45 ~ MNA, data = combined_data)
+wilcox_ntkr1 <- wilcox.test(gene45 ~ MNA, data = combined_data)
+
+# Print the results for gene 45 (NTKR1)
+t_test_ntkr1
+wilcox_ntkr1
+
+# Create a boxplot to visualize gene 14 (CD44) expression by MNA status
+boxplot(gene14 ~ MNA, data = combined_data, main = "CD44 Expression by MYCN Amplification", xlab = "MYCN Amplification (0 = No, 1 = Yes)", ylab = "CD44 Expression")
+
+
+```
+
+CONCLUSION: The expression of the 3 genes is significantly different in samples with versus without MYCN amplification (both in a parametric and non-parametric test) (p < 0.05).
+
+
+## Correlation analysis
+
+Plot expression of both gene 39 and gene 46 in a scatter plot. What is the pearson and spearman correlation coefficient between the expression of both genes and is there a significant correlation? Check the *cor.test()* manual for more information.
+
+```{r}
+# Assuming expression_data_pergene is your data frame
+
+library(ggplot2)
+
+# Create a scatter plot
+ggplot(expression_data_pergene, aes(x = gene39, y = gene46)) +
+  geom_point() +
+  labs(x = "Gene 39 Expression", y = "Gene 46 Expression", title = "Scatter Plot of Gene 39 vs. Gene 46")
+
+# Calculate Pearson and Spearman correlation coefficients
+pearson_cor <- cor.test(expression_data_pergene$gene39, expression_data_pergene$gene46, method = "pearson")
+spearman_cor <- cor.test(expression_data_pergene$gene39, expression_data_pergene$gene46, method = "spearman")
+
+# Print the correlation coefficients and p-values
+pearson_cor
+spearman_cor
+
+```
+
+CONCLUSION: Correlation analysis shows that the expression of these genes are significantly correlated in neuroblastoma samples, which can also be visualized in a scatter plot.
+
+## Parametric Anova or non-parametric Kruskal-Wallis test
+
+Look up the help of *anova.lm()* function which will perform an anova test for you. Look to the examples and write a similar script where you test if gene39 differs according to Stage. Print the summary for this. Can you do the same with the non-parametric alternative *kruskal.test()*? And what if we test gene 14 instead? In this way you will learn to interpret help manuals and start working with a new function you have not seen before.
+Also make a boxplot of the expression of the genes according to stage.
+
+```{r}
+# Assuming combined_data is your combined data frame
+
+# Parametric ANOVA test for gene39
+parametric_anova <- anova(lm(gene39 ~ Stage, data = combined_data))
+print("Parametric ANOVA:")
+print(summary(parametric_anova))
+
+# Non-parametric Kruskal-Wallis test for gene39
+non_parametric_kruskal <- kruskal.test(gene39 ~ Stage, data = combined_data)
+print("Non-Parametric Kruskal-Wallis:")
+print(non_parametric_kruskal)
+
+# Create a boxplot to visualize gene39 expression by Stage
+library(ggplot2)
+ggplot(combined_data, aes(x = Stage, y = gene39)) +
+  geom_boxplot() +
+  labs(x = "Stage", y = "Gene39 Expression", title = "Boxplot of Gene39 Expression by Stage")
+
+# You can repeat the same steps for gene 14 (CD44) instead of gene39
+
+```
+

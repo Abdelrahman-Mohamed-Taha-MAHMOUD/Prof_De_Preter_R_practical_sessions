@@ -1,0 +1,531 @@
+---
+title: "Ggplot_SOLVED_2022"
+author: "Celine Everaert"
+date: "2022-09-08"
+output: 
+  html_document:
+    theme: paper
+    highlight: tango
+    code_folding: show
+    toc: true
+    number_sections: true
+    toc_float: true
+    toc_depth: 3
+---
+
+# Visualise your data with ggplot2
+
+Looking to the (transformed) data can give you an idea about what is in there, but if you have many data points or complex relationships, visualising the data might give you useful insights. This paragraph will learn you the basics of **ggplot2**. Getting started with plotting with **ggplot2** might look more complicated compared to base R, but once you're understanding how it works, you can easily play around with it, you will discover that it's more versatile and finally will be able to make some publishing proof (or thesis proof) graphs.
+
+```{r setup, include=FALSE}
+#install.packages("tidyverse")
+library(tidyverse)
+```
+
+## Reading the data
+
+```{r}
+# read in tests
+covid_tests_data <- read_csv("COVID19BE_tests.csv")
+
+covid_case_data <- read_csv("COVID19BE_CASES_AGESEX.csv")
+
+# check again the column types of all three data frames, would you change any?
+covid_mortality_data <- read_csv("COVID19BE_MORT.csv")
+covid_mortality_data$SEX <- as.factor(covid_mortality_data$SEX)
+
+covid_hospitalisations_data <- read_csv("COVID19BE_HOSP.csv")
+
+NB_data <- read_csv("NB_data.csv", col_types = "cfcddfdfdd")
+
+```
+
+## Get started with plotting
+
+You can start plotting an easy scatter plot / point graph by using slightly different code. Often it doesn't matter what you're using, but in some cases it might. When this pops up, I will notify you about it.
+
+```{r}
+# refer to the data within ggplot itself
+ggplot(data = NB_data, aes(x = MYCN_expr, y = MYC_expr))+
+    geom_point()
+
+# or pipe the data to ggplot
+NB_data %>%
+  ggplot(aes(x=MYCN_expr, y=MYC_expr))+
+    geom_point()
+
+# declare the aesthetics when setting the plot
+ggplot(data = NB_data, aes(x = MYCN_expr, y = MYC_expr))+
+  geom_point()
+
+# or just declare the data and add the aesthetics later on
+ggplot(data = NB_data) +
+  geom_point(aes(x = MYCN_expr, y = MYC_expr))
+```
+
+Can you create a scatter plot where you relate the TESTS_ALL to TESTS_ALL_POS?
+
+```{r}
+# Load the tidyverse package
+library(tidyverse)
+
+# Assuming you have a data frame with columns TESTS_ALL and TESTS_ALL_POS
+
+# Create a scatter plot
+ggplot(data = covid_tests_data, aes(x = TESTS_ALL, y = TESTS_ALL_POS)) +
+  geom_point()
+
+
+```
+
+## Themes - the ggplot looks
+
+You can also play with the looks of the graph. Ggplot2 has some pre-implemented themes. [Here] (https://ggplot2.tidyverse.org/reference/ggtheme.html) you can find more information.
+
+The default theme is `theme_gray()`, which I don't prefer as it is too busy. My favourite theme is `theme_classic()` but often I just implement my own themes.
+
+```{r}
+NB_data %>%
+  ggplot(aes(x=MYCN_expr,y=MYC_expr))+
+    geom_point() +
+    theme_classic()
+
+# try out some other themes that you like demonstrated at the website
+library(tidyverse)
+
+# Create a scatter plot with the theme_classic()
+NB_data %>%
+  ggplot(aes(x = MYCN_expr, y = MYC_expr)) +
+  geom_point() +
+  theme_classic()
+
+# Try out some other themes
+NB_data %>%
+  ggplot(aes(x = MYCN_expr, y = MYC_expr)) +
+  geom_point() +
+  theme_minimal()  # Minimal theme
+
+NB_data %>%
+  ggplot(aes(x = MYCN_expr, y = MYC_expr)) +
+  geom_point() +
+  theme_light()  # Light theme
+
+NB_data %>%
+  ggplot(aes(x = MYCN_expr, y = MYC_expr)) +
+  geom_point() +
+  theme_dark()  # Dark theme
+
+
+```
+
+Besides themes, its also possible to tweak more visuals.
+```{r}
+# you can change the color of the dots
+NB_data %>%
+  ggplot(aes(x=MYCN_expr,y=MYC_expr))+
+    geom_point(color="red") +
+    theme_classic()
+
+# you can make the dots larger
+NB_data %>%
+  ggplot(aes(x=MYCN_expr,y=MYC_expr))+
+    geom_point(cex=10) +
+    theme_classic()
+
+# or smaller
+NB_data %>%
+  ggplot(aes(x=MYCN_expr,y=MYC_expr))+
+    geom_point(cex=0.1) +
+    theme_classic()
+```
+
+## Adding a third dimension
+
+For now we just used two dimensions, but you can add other dimensions by playing with colors and shapes for instance.
+
+```{r}
+NB_data %>%
+  ggplot(aes(x=MYCN_expr, y=MYC_expr, color=MYCN_status))+
+    geom_point() +
+    theme_classic()
+
+NB_data %>%
+  ggplot(aes(x=MYCN_expr, y=MYC_expr, shape=MYCN_status))+
+    geom_point() +
+    theme_classic()
+```
+
+## Other plot types
+We don't need to stick with scatterplots/points, we have a whole bunch of plot types that are programmed in ggplot2. Look to some of them in the next block of code. Note that the construction is almost the same for all of them, we just changed the geom_point() to geom_boxplot() for instance.
+
+For some plot types just one aesthetic is obliged (eg. histograms), for others both x and y are obliged to define. Most of the time you are free to add groups, colors, shapes, ... as aesthetics. You find this information in the cheat sheets on UFORA.
+
+Sometimes it might be interesting to plot two types on top of each other. Can you change the `geom_jitter()` to `geom_point()` and see what happens? Indeed, jitters are points that are scattered around their true values, while points are placed at the exact values.
+
+```{r}
+# plot a boxplot
+NB_data %>%
+  ggplot(aes(x=MYCN_status, y=MYC_expr, color=MYCN_status))+
+    geom_boxplot() +
+    theme_classic()
+
+# plot two plot types on top of each other
+NB_data %>%
+  ggplot(aes(x=stage, y=MYC_expr, group=stage, color=MYCN_status))+
+    geom_boxplot() +
+    geom_jitter() +
+    theme_classic()
+
+# only one aesthetic is needed
+NB_data %>%
+  ggplot(aes(x=age)) +
+    geom_histogram() +
+    theme_classic()
+
+# mutate your data before plotting, and all other tidyverse functions are possible to use
+NB_data %>%
+  mutate(age_years = age / 365,25) %>%
+  ggplot(aes(x=age_years)) +
+    geom_histogram() +
+    theme_classic()
+
+# plot bars per MYCN_status_type
+NB_data %>%
+  ggplot(aes(x=MYCN_status)) +
+    geom_bar() +
+    theme_classic()
+
+# plot stacked bars per status for the MYCN_status_type
+NB_data %>%
+  ggplot(aes(x=MYCN_status, fill=stage)) +
+    geom_bar() +
+    theme_classic()
+
+# plot stacked bars per status for the MYCN_status_type, but compare proportions instead of absolute numbers
+NB_data %>%
+  ggplot(aes(x=MYCN_status, fill=stage)) +
+    geom_bar(position = "fill") +
+    theme_classic()
+
+# we can also choose line graphs, but this is only useful when points are indeed connected, so I will move to the covid_tests_data to demonstrate
+covid_tests_data %>%
+  ggplot(aes(x = DATE, y = TESTS_ALL_POS, color = PROVINCE))+
+  geom_line()+
+  theme_classic()
+```
+
+## Additional shaping of plots
+
+If you don't like the colors, or want to rotate your plot or your labels, this is all possible but might require some practice. Here I demonstrate some of the possibilities, that make your plots a bit nicer.
+
+More about changing colors can be found [here] (https://www.r-bloggers.com/2013/09/how-to-expand-color-palette-with-ggplot-and-rcolorbrewer/) .
+
+```{r}
+# we rotate the previous plot by adding coord_flip()
+NB_data %>%
+  ggplot(aes(x=MYCN_status, fill=stage)) +
+    geom_bar(position = "fill") +
+    theme_classic() +
+    coord_flip()
+
+# we change the colors of the previous plot
+NB_data %>%
+  ggplot(aes(x=MYCN_status, fill=stage)) +
+    geom_bar(position = "fill") +
+    theme_classic() +
+    scale_fill_brewer(palette = "Set3")
+
+# we can change the position of our legend
+NB_data %>%
+  ggplot(aes(x=MYCN_status, fill=stage)) +
+    geom_bar(position = "fill") +
+    theme_classic() +
+    theme(legend.position = "bottom")
+
+# we could also change the title of the plot or axis
+NB_data %>%
+  ggplot(aes(x=MYCN_status, fill=stage)) +
+    geom_bar(position = "fill") +
+    theme_classic() +
+    scale_fill_brewer(palette = "Set3")+
+    labs(title = "Stack plot of Stages per MYCN status", x = "MYCN status", y = "stage percentage")
+
+# if we want to remove or x axis, since its not that useful, we could do so
+NB_data %>%
+  ggplot(aes(x=MYCN_status, fill=stage)) +
+    geom_bar(position = "fill") +
+    theme_classic() +
+    scale_fill_brewer(palette = "Set3")+
+    labs(title = "Stack plot of Stages per MYCN status", x = "MYCN status", y = "stage percentage") +
+    theme(axis.line.x = element_blank(), axis.ticks.x = element_blank())
+
+# and there are many other things we could do!
+```
+
+## Saving Figures
+
+For publication reasons, you want to save your plot as a pdf of png file. I prefer the pdf format, since you can later on easily adapt your figures (change colors, make text larger, ...) in Adobe Illustrator or other software that supports the use of vector files.
+
+```{r}
+# you can easily save the last plot you made
+covid_tests_data %>%
+  ggplot(aes(x = DATE, y = TESTS_ALL_POS, color = PROVINCE))+
+  geom_line()+
+  theme_classic()
+
+ggsave("Fig1_postive_test_per_province.pdf")
+
+# another option is to store your figure in a variable, and then save it
+ plot_tests <- covid_tests_data %>%
+  ggplot(aes(x = DATE, y = TESTS_ALL_POS, color = PROVINCE))+
+  geom_line()+
+  theme_classic()
+ 
+ggsave("Fig1_postive_test_per_province.pdf", plot_tests)
+ 
+ # you can adapt some parameters including the size of the figure and the file format (adapt the file extension when doing so)
+ggsave("Fig1_postive_test_per_province.png", plot_tests, width = 15, height = 8, units="cm", device="png")
+
+# if you want to use Adobe Illustrator afterwards I recommend to add the useDingbats=FALSE option, this will ease changing things
+ggsave("Fig1_postive_test_per_province.pdf", useDingbats=FALSE)
+```
+
+
+## Practice making plots
+
+Last practical session, we went over the basisc on how to make plots in R. Now its your turn to practice. Just explore things, but I will give you some options to try out.
+The difficulty of the exercise is increasing along the way.
+
+### Make boxplots for the positive per province
+
+Make a graph where you show boxplots for positive tests (y) per province (x).
+
+```{r}
+# Load the necessary library
+library(ggplot2)
+
+# Create the boxplot
+covid_tests_data %>%
+  ggplot(aes(x = PROVINCE, y = TESTS_ALL_POS, fill = PROVINCE)) +
+  geom_boxplot() +
+  theme_classic()
+
+
+```
+Can you add now a theme classic? And change the title and labels of the axis?
+
+```{r}
+covid_tests_data %>%
+  ggplot(aes(x = PROVINCE, y = TESTS_ALL_POS, fill = PROVINCE)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(title = "Boxplot of Positive Tests per Province",
+       x = "Province",
+       y = "Positive Tests")
+
+```
+
+Instead of the positive tests, we could plot a positive test ratio that we first calculate. Add this calculation (use mutate as you did before) and change the y value.
+
+```{r}
+covid_tests_data %>%
+  mutate(positive_test_ratio = TESTS_ALL_POS / TESTS_ALL) %>%  # Calculate the positive test ratio
+  ggplot(aes(x = PROVINCE, y = positive_test_ratio, fill = PROVINCE)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(title = "Boxplot of Positive Test Ratio per Province",
+       x = "Province",
+       y = "Positive Test Ratio")
+
+```
+
+We changed our minds and we are only interested in flanders and the dates from October 1th. Filter this data before you calculate the positive test ratio. If you doubt if you filtered out the good data, print your data frame first before piping it into ggplot.
+
+```{r}
+filtered_data <- covid_tests_data %>%
+  filter(REGION == "Flanders", DATE >= ymd("2021-10-01"))  # Filter for Flanders and dates from October 1st
+
+# Print the filtered data to check if it's correct
+print(filtered_data)
+
+# Calculate the positive test ratio and create the plot
+filtered_data %>%
+  mutate(positive_test_ratio = TESTS_ALL_POS / TESTS_ALL) %>%
+  ggplot(aes(x = PROVINCE, y = positive_test_ratio, fill = PROVINCE)) +
+  geom_boxplot() +
+  theme_classic() +
+  labs(title = "Boxplot of Positive Test Ratio in Flanders (since October 1st)",
+       x = "Province",
+       y = "Positive Test Ratio")
+
+```
+
+Do you see how you can play around? Try to build these plots in the same way as you did now. So start with the basics: check your input data (did you use the good filters, group_by arguments?), plot a basic plot, shape your plot at last and make something nice.
+
+### Compare the age groups of the deaths between both sexes
+
+First, calculate the sum of the DEATHS per gender and age group (you did this before). Make a stacked bar chart (since your using the values as they are, add stat = "identity" as an argument in `geom_bar()`). Finally, add a title and axis labels. Use `theme_classic()`.
+
+```{r}
+
+```
+
+### Plot the number of deaths per gender over time
+
+We will shape our data first and calculate the sum of the DEATHS per gender over time (DATE) (by using *group_by()* and *summarise()*).
+In this case we want to plot points (*geom_point()*) connected by lines (*geom_line()*). We will use *theme_light()* and try to change the colors to "lightblue" and "lightpink" (using *scale_color_manual(values= c("lightpink", "lightblue"))*). You will see that there are NA values, you can drop this from your data frame by adding " %>% *drop_na()*" before you group. Add an approriate title and axis labels.
+
+```{r}
+
+```
+
+### Ratio of positive tests over time
+
+Since the test strategy is changing during this covid-19 pandemic, its hard to compare positive tests. A better proxy (but not optimal) would be comparing the ratio of positive tests. For this exercise we will first group by the date, take the sum of the TESTS_ALL_POS and TESTS_ALL value, calculate the positive tests ratio, and than plot this over time (use `geom_col()`). Make use of `theme_minimal()`. Foresee the plot of an appropriate title and axis labels.
+
+```{r}
+
+```
+
+Next practical session, we will practice this part further and you will learn how to work on good visualisations. If you still have time, you could start here with practicing a bit more.
+
+# Visualise your data with ggplot2 - Advanced
+
+# Additional exercise
+
+This is a recap exercise highly similar to what we might ask on the exam. It will give you a good idea of what we will expect from you.
+
+Download the 'Administered vaccines by date, region, age, sex, brand and dose' csv file from [the same website](https://epistat.wiv-isp.be/covid/).
+
+Read in the data and double check the column types. Convert SEX and DOSE to factors.
+
+```{r}
+covid_vacc_data <- 
+```
+
+Calculate the total number of vaccines given in Flanders for each of the brands.
+
+```{r}
+
+```
+
+Calculate the total number of vaccines given in Flanders for each of the brands per dose.
+
+```{r}
+
+```
+
+On what day where the most vaccines given until today?
+
+```{r}
+
+```
+
+
+Plot the cummulative number (use `cumsum()`) of vaccines per brand over time as a line graph. Use theme minimal. Name the graph and axis so that the message is clear. Which brand has the highest number of doses given by now? Did this change over time?
+
+```{r}
+
+```
+
+Make a stacked bar plot where you display the percentage of vaccine doses for each brand per age group. Use only the data for Flanders. Use theme classic. Name the graph and axis so that the message is clear. Is AstraZeneca equally given in each age group? 
+
+```{r}
+
+```
+
+Filter the Pfizer data in Flanders on 2021-06-09. Summarise the total deses per age group and sex. Make a dot plot, by plotting the AGEGROUP on the x-axis and SEX on the y-axis. The size of the points are the total vaccines given. Use theme minimal.
+
+```{r}
+
+```
+
+# Some more visualisations
+
+## Cumulative sum of the cases and plot smoothers
+
+```{r}
+library(lubridate)
+covid_case_data %>%
+  #drop all na values
+  
+  #get the week of the date with lubridate
+  
+  #group by the week and regio and take the sum of the cases
+
+  
+  #remove the grouping
+  
+  #calculate the cumulative sum
+  
+  #and plot weeks versus the cumulative sum with a smoother
+  ggplot(aes(x=WEEK, y = cumsumCASES, color = REGION))+
+    geom_point()+
+    geom_smooth(method = loess, se = FALSE)+
+    labs(title = "Cumulative sum of the cases", x = "week of the year", y = "cumulative cases")+
+    theme_classic()
+```
+
+## Differences of hospitalised patients compared to the previous day
+
+```{r}
+covid_hospitalisations_data %>%
+  # we want this number per province
+  
+  # since we will calculate a difference between two following days, we first arrange per data
+  
+  # we take the value of the next day with lead and calculate the difference with our date
+  
+  # we only select the provinces in flanders
+  
+  ggplot(aes(x = DATE, y = difference_IN, fill = PROVINCE))+
+  # we want to plot the areas under the curve
+      geom_area()+
+  # plotting on top of each other is not visual enough, but since not all provinces have the same number of inhabitants, we loosen the y scale
+      facet_wrap(~PROVINCE, scales= "free_y") +
+  theme_classic()
+```
+
+## Deaths per age group
+
+```{r}
+covid_mortality_data %>%
+  group_by(DATE, AGEGROUP) %>%
+  summarise(DEATHS = sum(DEATHS)) %>%
+  ggplot(aes(x=DATE, y=DEATHS, fill=AGEGROUP))+
+  geom_bar(stat = "identity", position="stack") +
+  theme_classic()
+
+#split by sex
+covid_mortality_data %>%
+  group_by(DATE, AGEGROUP, SEX) %>%
+  summarise(DEATHS = sum(DEATHS)) %>%
+  drop_na() %>%
+  ggplot(aes(x=DATE, y=DEATHS, fill=AGEGROUP))+
+  geom_bar(stat = "identity", position="stack") +
+  facet_wrap(~SEX)+
+  theme_classic()
+
+#plot to same but use area to make it look better > this gives weird lines for age groups for which people die sporadically
+covid_mortality_data %>%
+  group_by(DATE, AGEGROUP, SEX) %>%
+  summarise(DEATHS = sum(DEATHS)) %>%
+  drop_na() %>%
+  ggplot(aes(x=DATE, y=DEATHS, fill=AGEGROUP))+
+  geom_area(stat="identity") +
+  facet_wrap(~SEX)+
+  theme_classic()
+
+#thats why we will add zero values for those observations with "complete"
+covid_mortality_data %>%
+  group_by(DATE, AGEGROUP, SEX) %>%
+  summarise(DEATHS = sum(DEATHS)) %>%
+  drop_na() %>%
+  ungroup() %>%
+  tidyr::complete(DATE, AGEGROUP, SEX, fill=list(DEATHS=0)) %>%
+  ggplot(aes(x=DATE, y=DEATHS, fill=AGEGROUP))+
+  geom_area(stat="identity") +
+  facet_wrap(~SEX)+
+  theme_classic()
+```
+
